@@ -1,0 +1,214 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+
+}
+
+.logo {
+    font-size: 32px;
+    color: #9a9a9a;
+    font-weight: bold;
+    position: absolute;
+    top: 50px;
+    left: 50px;
+}
+
+.container {
+    max-width: 500px;
+    width: 100%;
+    padding: 40px;
+    /*border: 2px solid #2a2a2a;*/
+    background-color: #f8f9fa;
+    border-radius: 15px;
+    overflow: hidden;
+    text-align: left; /* Выровнять текст по левому краю */
+    position: relative;
+    margin-top: 60px; /* Чтобы контейнер не перекрывался логотипом */
+}
+
+
+.form-section h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.form-section p {
+    color: #9a9a9a;
+    margin-bottom: 30px;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-field {
+    text-align: left;
+}
+
+label {
+    font-size: 14px;
+    color: #737373;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.icon {
+    position: absolute;
+    left: 15px;
+    font-size: 16px;
+    color: #ffffff;
+    opacity: 0.7;
+    font-weight: 300;
+}
+
+
+input {
+    width: 100%;
+    padding: 10px 10px 10px 40px;
+    font-size: 18px;
+    background-color: #f8f9fa;
+    border: 1px solid #636363;
+    border-radius: 10px;
+    color: #2e2e2e;
+}
+
+input:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 5px rgb(72, 87, 165, 0.6);
+}
+
+.input-group input {
+    width: 100%;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #333333;
+    background-color: #262626;
+    color: #2e2e2e;
+    font-size: 18px;
+}
+
+.input-group input::placeholder {
+    color: #888;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 15px;
+    background-color: #4a90e2;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 1.2em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.submit-btn:hover {
+    background-color: #4a90e2;
+}
+
+/* Modal Overlay */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #f8f9fa;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* Modal Content */
+.modal-content {
+    background-color: #1e1e1e;
+    border-radius: 10px;
+    width: 400px;
+    padding: 30px;
+    text-align: center;
+    color: white;
+    position: relative;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    color: #888;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+h2.modal-title {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.otp-description {
+    color: #aaaaaa;
+    margin-bottom: 20px;
+}
+
+/* OTP Input Boxes */
+.otp-inputs {
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+}
+
+.otp-inputs input {
+    width: 50px;
+    height: 50px;
+    font-size: 30px ;
+    text-align: center;
+    border-radius: 5px;
+    border: 1px solid #4a90e2;
+    background-color: #f8f9fa;
+    color: white;
+}
+
+.otp-inputs input:focus {
+    outline: none;
+    border-color: #4a90e2; /* Neon green border on focus */
+    box-shadow:0 0 5px rgb(72, 87, 165, 0.6);
+    background-color: #f8f9fa; /* Dark background on focus */
+}
+
+.verify-btn {
+    width: 100%;
+    padding: 15px;
+    background-color: #4a90e2;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 1.2em;
+    cursor: pointer;
+}
+
+.verify-btn:hover {
+    background-color: #4a90e2;
+}

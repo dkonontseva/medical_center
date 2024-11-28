@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarePulse Form</title>
+    <link rel="stylesheet" href="../static/auth.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        .error-message {
+            position: fixed;
+            top: 15%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #4a90e2;
+            color: #f8f9fa;
+            padding: 20px;
+            height: 60px;
+            border-radius: 5px;
+            display: none;
+            font-size: 20px;
+        }
+        .reg{
+            color: #262626;
+            margin-left: 100px;
+        }
+
+    </style>
+</head>
+<body>
+<div class="logo">CarePulse</div>
+
+<div class="container">
+    <h1 style="color: #1e1e1e; margin-bottom: 20px">Login</h1>
+    <div class="form-section">
+
+        <form class="form" action="/login" method="post" onsubmit="sendOTP(); return false;">
+            <div class="form-field">
+                <label for="email">Email address</label>
+                <div class="input-wrapper">
+                    <span class="icon"><i class="fas fa-envelope"></i></span>
+                    <input type="email" id="email" name="email" placeholder="adrian@jsmastery.pro" required>
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label for="password">Password</label>
+                <div class="input-wrapper">
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    <span class="icon toggle-password" onclick="togglePasswordVisibility()">
+                            <i class="fas fa-eye"></i>
+                        </span>
+                </div>
+            </div>
+            <a href="registration.html" class="reg">Don't have account? Register!</a>
+            <button type="submit" class="submit-btn">Get Started</button>
+        </form>
+    </div>
+</div>
+
+
+<div id="error-message" class="error-message">{% if error_message %}{{ error_message }}{% endif %}</div>
+{% if error_message %}
+    <script>
+        function showErrorMessage() {
+            var errorMessage = document.getElementById('error-message');
+            errorMessage.style.display = 'block';
+
+            setTimeout(function () {
+                errorMessage.style.display = 'none';
+            }, 3000); // 3000 milliseconds = 3 seconds
+        }
+
+        showErrorMessage();
+    </script>
+{% endif %}
+<script>
+    function togglePasswordVisibility() {
+        const passwordField = document.getElementById('password');
+        const toggleIcon = document.querySelector('.toggle-password i');
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordField.type = 'password';
+            toggleIcon.classList.remove('fa-eye-slash');
+            toggleIcon.classList.add('fa-eye');
+        }
+    }
+
+    function sendOTP() {
+        console.log('OTP has been sent to the email or phone');
+        document.getElementById('otpModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('otpModal').style.display = 'none';
+    }
+
+    function moveNext(current, nextFieldID) {
+        if (current.value.length === current.maxLength) {
+            document.getElementById(nextFieldID).focus();
+        }
+    }
+
+    function checkInput(current) {
+        if (current.value.length === current.maxLength) {
+            moveNext(current, 'otp6');
+        }
+    }
+
+    function verifyOTP() {
+        let otp = '';
+        for (let i = 1; i <= 6; i++) {
+            otp += document.getElementById('otp' + i).value;
+        }
+
+        if (otp === '111111') {
+            alert('OTP Verified Successfully!');
+            closeModal();
+        } else {
+            alert('Invalid OTP, please try again.');
+        }
+    }
+</script>
+</body>
+</html>

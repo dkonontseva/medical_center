@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pre Clinic - Leave Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        :root {
+            --primary-color: #4a90e2;
+            --background-color: #F3F6F9;
+            --text-color: #2E2E3A;
+            --border-color: #EBEEF6;
+            --success-color: #2BC155;
+            --warning-color: #FFA755;
+            --danger-color: #FF5C75;
+            --new-color: #8E44AD;
+            --sidebar-width: 280px;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #272b41;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar */
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: #ffffff;
+            padding: 20px;
+            height: 100vh;
+            position: fixed;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo img {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .logo span {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .menu-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .menu-item a {
+            text-decoration: none;
+            color: var(--text-color);
+            font-size: 16px;
+            margin-left: 12px;
+            flex-grow: 1;
+        }
+
+        .menu-item:hover {
+            background-color: rgba(59, 76, 184, 0.1);
+        }
+
+        .menu-item.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .menu-item.active a {
+            color: white;
+        }
+
+        .menu-item i {
+            font-size: 18px;
+            color: var(--text-color);
+        }
+
+        .menu-item.active i {
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 30px;
+            flex: 1;
+            width: 1620px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .header h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2E2E3A;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background: white;
+            border-radius: 8px;
+            padding: 8px 15px;
+            width: 280px;
+            border: 1px solid #EBEEF6;
+        }
+
+        .search-bar i {
+            color: #8A92A6;
+            font-size: 16px;
+        }
+
+        .search-bar input {
+            border: none;
+            outline: none;
+            width: 100%;
+            margin-left: 10px;
+            font-size: 14px;
+            color: #525252;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        th {
+            font-weight: 600;
+            color: #525252;
+            font-size: 13px;
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+        }
+
+        td {
+            padding: 15px;
+            font-size: 14px;
+            color: #525252;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+
+        .actions-cell i {
+            color: #8A92A6;
+            cursor: pointer;
+        }
+
+
+        form label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+
+        input[type="text"], input[type="date"], input[type="time"], select, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .status label {
+            margin-right: 10px;
+        }
+
+        button {
+            background-color: #4fd1c5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        button[type="button"] {
+            background-color: white;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .container1 {
+            width: 100%;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            margin-bottom: 20px;
+            color: #4fd1c5;
+            font-size: 16px;
+        }
+
+        .breadcrumb {
+            color: #4fd1c5;
+            text-decoration: none;
+        }
+
+        .breadcrumb-active {
+            color: #333;
+        }
+
+        .edit-schedule h2 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"], input[type="date"], input[type="time"], select, textarea {
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            background-color: #f7f8fa;
+        }
+
+        textarea {
+            resize: vertical;
+            height: 80px;
+        }
+
+        .status-group {
+            display: flex;
+            align-items: center;
+            flex-direction: row;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .status-group input[type="radio"] {
+            margin-right: 5px;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .submit-button {
+            margin-top: 30px;
+            width: 200px;
+            padding: 15px;
+            background-color: #3a57e8;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-bottom: 30px;
+        }
+
+        .cancel-button {
+            margin-top: 30px;
+            width: 200px;
+            padding: 15px;
+            background-color: white;
+            border: none;
+            border-radius: 8px;
+            color: #3a57e8;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-bottom: 30px;
+        }
+
+        .submit-button:hover {
+            background-color: #6c87ff;
+        }
+
+        .cancel-button:hover {
+            background-color: #cccccc;
+        }
+
+        /* Календарь */
+        .flatpickr-calendar {
+            background-color: #565fa5; /* Темный фон */
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .flatpickr-day,
+        .flatpickr-weekday {
+            color: white;
+        }
+
+        .flatpickr-day:hover {
+            background-color: rgba(108, 135, 255, 0.3);
+            color: white;
+        }
+
+        .flatpickr-day.today {
+            background-color: #6c87ff;
+            color: white;
+        }
+
+        .flatpickr-month {
+            background-color: #262626;
+        }
+
+        .flatpickr-prev-month, .flatpickr-next-month {
+            color: #6c87ff;
+        }
+
+        .flatpickr-current-month {
+            color: #6c87ff;
+        }
+
+        .flatpickr-time {
+            background-color: #2e2e2e;
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .flatpickr-time .flatpickr-hour,
+        .flatpickr-time .flatpickr-minute,
+        .flatpickr-time .flatpickr-second {
+            background-color: #262626;
+            color: #6c87ff;
+            border-radius: 6px;
+            padding: 5px;
+        }
+
+        .flatpickr-time .flatpickr-time-separator {
+            color: #2e2e2e;
+        }
+
+        .flatpickr-time .flatpickr-time:hover {
+            background-color: rgba(108, 135, 255, 0.3);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .filters {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+
+            .logo span,
+            .menu-item span {
+                display: none;
+            }
+
+            .filters {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar">
+        <div class="logo">
+            <img src="https://picsum.photos/32/32?random=1" alt="Logo">
+            <span>Pre Clinic</span>
+        </div>
+        <div class="menu-item">
+            <i class="fas fa-th-large"></i>
+            <a href="adminDashboard.html">Dashboard</a>
+        </div>
+        <div class="menu-item">
+            <i class="fas fa-user-md"></i>
+            <a href="doctorsList.html">Doctors</a>
+        </div>
+        <div class="menu-item">
+            <i class="fas fa-users"></i>
+            <a href="patientsList.html">Patients</a>
+        </div>
+        <div class="menu-item active">
+            <i class="fas fa-calendar-alt"></i>
+            <a href="appointmentList.html">Appointments</a>
+        </div>
+        <div class="menu-item">
+            <i class="far fa-clock"></i>
+            <a href="scheduleList.html">Doctor Schedule</a>
+        </div>
+        <div class="menu-item">
+            <i class="fas fa-hospital"></i>
+            <a href="doctorLeaves.html">Doctor Leaves</a>
+        </div>
+    </div>
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="header">
+            <h2>Doctor Schedule</h2>
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search here">
+            </div>
+        </div>
+
+        <div class="container1">
+            <div class="header">
+                <a href="#" class="breadcrumb">Appointments</a> &gt; <span
+                    class="breadcrumb-active">Edit Appointments</span>
+            </div>
+            <section class="edit-schedule">
+                <h2>Edit Appointments</h2>
+                <form id="edit-schedule-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="doctor-name">Doctor Name *</label>
+                            <input type="text" id="doctor-name" value="Dr. William Stephin" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="patient-name">Patient Name *</label>
+                            <input type="text" id="patient-name" value="William Stephin" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+
+                        <div class="form-group">
+                            <label for="date">Date *</label>
+                            <input type="date" id="date">
+                        </div>
+                        <div class="form-group">
+                            <label for="time">Time *</label>
+                            <input type="time" id="time" value="18:00">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">Reason *</label>
+                        <textarea id="notes" placeholder="Enter any notes..."></textarea>
+                    </div>
+                    <div class="form-group status-group">
+                        <label>Status *</label>
+                        <input type="radio" id="approved" name="status" value="approved" checked>
+                        <label for="approved">Approved</label>
+                        <input type="radio" id="pending" name="status" value="pending">
+                        <label for="pending">Pending</label>
+                        <input type="radio" id="rejected" name="status" value="rejected" >
+                        <label for="rejected">Rejected</label>
+                    </div>
+                    <div class="button-group">
+                        <button type="submit" class="submit-button">Save Appointment</button>
+                        <button type="button" class="cancel-button" onclick="cancelEdit()">Cancel</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Интерактивность меню
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', function () {
+            document.querySelector('.menu-item.active')?.classList.remove('active');
+            this.classList.add('active');
+        });
+    });
+
+    // Функциональность поиска
+    document.querySelector('.search-bar input').addEventListener('input', function (e) {
+        console.log('Searching for:', e.target.value);
+    });
+
+    // Обработка экспорта
+    document.querySelectorAll('.export-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            console.log('Exporting...');
+        });
+    });
+
+    flatpickr("#date", {
+        dateFormat: "Y-m-d",
+        altInput: true,
+        altFormat: "F j, Y",
+        allowInput: true,
+        onReady: function (selectedDates, dateStr, instance) {
+            instance.element.setAttribute('placeholder', 'Select your date of birth');
+        },
+        static: true, // Calendar is static on the page
+        position: "above" // Position of the calendar
+    });
+    flatpickr("#time", {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i",
+        time_24hr: true
+    });
+
+</script>
+</body>
+</html>

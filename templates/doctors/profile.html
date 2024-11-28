@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Profile Settings</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: #f0f2f5;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: #ffffff;
+            padding: 20px;
+            height: 100vh;
+            position: fixed;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .doctor-profile {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .doctor-profile img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 8px 8px 16px #e6e6e6, -8px -8px 16px #ffffff;
+        }
+
+        .doctor-info h3 {
+            color: #272b41;
+            font-size: 18px;
+        }
+
+        .doctor-info p {
+            color: #757575;
+            font-size: 14px;
+        }
+
+        .nav-menu .nav-item {
+            padding: 12px 20px;
+            margin: 8px 0;
+            border-radius: 10px;
+            color: #272b41;
+            display: flex;
+            align-items: center;
+            box-shadow: 4px 4px 8px #e6e6e6, -4px -4px 8px #ffffff;
+            text-decoration: none;
+        }
+
+        .nav-item.active {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .nav-item:hover {
+            background: rgba(74, 144, 226, 0.36);
+            color: white;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 30px;
+            flex: 1;
+        }
+
+        .section-title {
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .profile-container {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 8px 8px 16px #e6e6e6, -8px -8px 16px #ffffff;
+            margin-top: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #4a90e2;
+            font-weight: bold;
+            border-bottom: 2px solid #4a90e2;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .profile-sidebar {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 8px 8px 16px #e6e6e6, -8px -8px 16px #ffffff;
+        }
+
+        .profile-main {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 8px 8px 16px #e6e6e6, -8px -8px 16px #ffffff;
+        }
+
+        .profile-image {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .profile-image img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 5px solid white;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-btn {
+            background: #4a90e2;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            margin-top: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 4px 4px 8px #e6e6e6, -4px -4px 8px #ffffff;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 6px 6px 12px #e6e6e6, -6px -6px 12px #ffffff;
+        }
+
+        .profile-menu {
+            list-style: none;
+        }
+
+        .profile-menu li {
+            margin-bottom: 15px;
+        }
+
+        .profile-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #666;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .profile-menu a:hover {
+            background: #f8f9fa;
+            color: #4a90e2;
+            transform: translateX(5px);
+        }
+
+        .profile-menu a.active {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .profile-menu i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: #4a90e2;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(9, 220, 164, 0.1);
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        textarea.form-control {
+            height: 120px;
+            resize: vertical;
+        }
+
+        .section-heading {
+            font-size: 18px;
+            color: #333;
+            margin: 30px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .add-more-btn {
+            background: #f8f9fa;
+            color: #4a90e2;
+            border: 2px solid #4a90e2;
+            padding: 8px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-more-btn:hover {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .save-btn {
+            background: #4a90e2;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 30px;
+            font-size: 16px;
+            box-shadow: 4px 4px 8px #e6e6e6, -4px -4px 8px #ffffff;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 6px 6px 12px #e6e6e6, -6px -6px 12px #ffffff;
+        }
+
+        .tags-input {
+            position: relative;
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .tag {
+            padding: 8px 15px;
+            background: #4a90e2;
+            color: white;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .tag span {
+            cursor: pointer;
+        }
+
+        .tag:hover {
+            transform: translateY(-2px);
+        }
+
+        .clinic-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .clinic-image {
+            position: relative;
+            height: 150px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .clinic-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .remove-image {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #ff4444;
+        }
+
+        @media (max-width: 1024px) {
+            .profile-container {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section-title {
+            display: block;
+            font-size: 2em;
+            margin-block-end: 0.67em;
+            margin-inline-start: 0px;
+            margin-inline-end: 0px;
+            font-weight: bold;
+            unicode-bidi: isolate;
+        }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="doctor-profile">
+        <img src="https://picsum.photos/200/200?random=1" alt="Doctor Profile">
+        <div class="doctor-info">
+            <h3>Dr. Darren Elder</h3>
+            <p>BDS, MDS - Oral & Maxillofacial Surgery</p>
+            <button class="upload-btn">
+                <i class="fas fa-camera"></i> Change Photo
+            </button>
+        </div>
+    </div>
+    <div class="nav-menu">
+        <a href="dashboard.html" class="nav-item">Dashboard</a>
+        <a href="myPatients.html" class="nav-item">My Patients</a>
+        <a href="patientsCards.html" class="nav-item">Patients' cards</a>
+        <a href="profile.html" class="nav-item active">Profile Settings</a>
+    </div>
+</div>
+<div class="main-content">
+    <h1 class="section-title">Profile Settings</h1>
+
+    <div class="profile-container">
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('user')">Basic Information</div>
+            <div class="tab" onclick="switchTab('building')">Address Info</div>
+            <div class="tab" onclick="switchTab('graduation')">Education</div>
+            <div class="tab" onclick="switchTab('lock')">Change Password</div>
+        </div>
+        <div id="user" class="tab-content">
+            <form action="/patientProfile" method="post, get">
+                <div class="section-heading">Basic Information</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" class="form-control" value="dr.darrenelder">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" class="form-control" value="darrenelder@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label>First Name</label>
+                        <input type="text" class="form-control" value="Darren">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Last Name</label>
+                        <input type="text" class="form-control" value="Elder">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel" class="form-control" value="+1 315 369 5943">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select class="form-control">
+                            <option>Male</option>
+                            <option>Female</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>About Me</label>
+                        <textarea class="form-control">BDS, MDS - Oral & Maxillofacial Surgery with 15 years of experience.</textarea>
+                    </div>
+                </div>
+
+                <div class="section-heading">Services & Specialization</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Services</label>
+                        <div class="tags-container" id="services-tags">
+                            <div class="tag">
+                                Tooth cleaning <span>&times;</span>
+                            </div>
+                            <div class="tag">
+                                Root Canal <span>&times;</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Specialization</label>
+                        <div class="tags-container" id="specialization-tags">
+                            <div class="tag">
+                                Oral Surgery <span>&times;</span>
+                            </div>
+                            <div class="tag">
+                                Orthodontics <span>&times;</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="save-btn">Save Changes</button>
+            </form>
+        </div>
+        <div id="building" class="tab-content" style="display: none;">
+            <form action="/patientProfile" method="post, get">
+
+                <div class="section-heading">Address</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Country</label>
+                        <input type="text" class="form-control" value="Belarus">
+                    </div>
+
+                    <div class="form-group">
+                        <label>City</label>
+                        <input type="text" class="form-control" value="Minsk">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Street</label>
+                        <input type="text" class="form-control" value="Lenina">
+                    </div>
+
+                    <div class="form-group">
+                        <label>House №</label>
+                        <input type="text" class="form-control" value="4">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Flat</label>
+                        <input type="text" class="form-control" value="3">
+                    </div>
+
+                </div>
+                <button type="submit" class="save-btn">Save Changes</button>
+            </form>
+        </div>
+        <div id="graduation" class="tab-content" style="display: none;">
+            <form action="/patientProfile" method="post, get">
+
+                <div class="section-heading">Graduation</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>University</label>
+                        <input type="text" class="form-control" value="Belarusian state medical University">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Faculty</label>
+                        <input type="text" class="form-control" value="Treatment">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Specialization</label>
+                        <input type="text" class="form-control" value="Cardiology">
+                    </div>
+
+                    <div class="form-group">
+                        <label>From year</label>
+                        <input type="text" class="form-control" value="2020">
+                    </div>
+
+                    <div class="form-group">
+                        <label>To year</label>
+                        <input type="text" class="form-control" value="2025">
+                    </div>
+
+                </div>
+                <button type="submit" class="save-btn">Save Changes</button>
+            </form>
+        </div>
+        <div id="lock" class="tab-content" style="display: none;">
+            <form action="/patientProfile" method="post, get">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Old password</label>
+                        <input type="password" class="form-control" value="1111">
+                    </div>
+
+                    <div class="form-group">
+                        <label>New password</label>
+                        <input type="password" class="form-control" value="11111111">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Repeat password</label>
+                        <input type="password" class="form-control" value="11111111">
+                    </div>
+                </div>
+                <button type="submit" class="save-btn">Save Changes</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tag removal functionality
+    document.querySelectorAll('.tag span').forEach(closeBtn => {
+        closeBtn.addEventListener('click', function () {
+            this.parentElement.remove();
+        });
+    });
+
+    // Image removal functionality
+    document.querySelectorAll('.remove-image').forEach(btn => {
+        btn.addEventListener('click', function () {
+            this.parentElement.remove();
+        });
+    });
+
+    // Hover effects for buttons
+    document.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('mouseenter', () => {
+            btn.style.transform = 'translateY(-2px)';
+        });
+        btn.addEventListener('mouseleave', () => {
+            btn.style.transform = 'translateY(0)';
+        });
+    });
+
+    // Menu item hover effects
+    document.querySelectorAll('.profile-menu a').forEach(item => {
+        item.addEventListener('mouseenter', () => {
+            if (!item.classList.contains('active')) {
+                item.style.transform = 'translateX(5px)';
+            }
+        });
+        item.addEventListener('mouseleave', () => {
+            if (!item.classList.contains('active')) {
+                item.style.transform = 'translateX(0)';
+            }
+        });
+    });
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+        document.querySelector(`#${tab}`).style.display = 'block';
+
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
+    <style>
+        /* Стилизация страницы */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #272b41;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: #ffffff;
+            padding: 20px;
+            height: 100vh;
+            position: fixed;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .doctor-profile {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .doctor-profile img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 8px 8px 16px #e6e6e6, -8px -8px 16px #ffffff;
+        }
+
+        .doctor-info h3 {
+            color: #272b41;
+            font-size: 18px;
+        }
+
+        .doctor-info p {
+            color: #757575;
+            font-size: 14px;
+        }
+
+        .nav-menu .nav-item {
+            padding: 12px 20px;
+            margin: 8px 0;
+            border-radius: 10px;
+            color: #272b41;
+            display: flex;
+            align-items: center;
+            box-shadow: 4px 4px 8px #e6e6e6, -4px -4px 8px #ffffff;
+            text-decoration: none;
+        }
+
+        .nav-item.active {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .nav-item:hover {
+            background: rgba(74, 144, 226, 0.36);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 30px;
+            flex: 1;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 8px 8px 16px #e6e6e6, -8px -8px 16px #ffffff;
+        }
+
+        .appointments-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 8px 8px 16px #e6e6e6, -8px -8px 16px #ffffff;
+            margin-top: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #4a90e2;
+            font-weight: bold;
+            border-bottom: 2px solid #4a90e2;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        th {
+            color: #272b41;
+            font-weight: 600;
+        }
+
+        td {
+            color: #757575;
+        }
+
+        .status-btn {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .accept {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .cancel {
+            background: #a4b4ff;
+            color: white;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 20px;
+            gap: 8px;
+        }
+
+        .page-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #EBEEF6FF;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            color: #525252;
+        }
+
+        .page-btn.active {
+            background: #4a90e2;
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="doctor-profile">
+        <img src="https://picsum.photos/200/200?random=1" alt="Doctor Profile">
+        <div class="doctor-info">
+            <h3>Dr. Darren Elder</h3>
+            <p>BDS, MDS - Oral & Maxillofacial Surgery</p>
+        </div>
+    </div>
+    <div class="nav-menu">
+        <a href="dashboard.html" class="nav-item active">Dashboard</a>
+        <a href="myPatients.html" class="nav-item">My Patients</a>
+        <a href="patientsCards.html" class="nav-item">Patients' cards</a>
+        <a href="profile.html" class="nav-item">Profile Settings</a>
+    </div>
+</div>
+
+<div class="main-content">
+    <h1 class="section-title">Dashboard</h1>
+
+    <div class="stats-container">
+        <div class="stat-card">
+            <h2>1500</h2>
+            <p>Total Patients</p>
+        </div>
+        <div class="stat-card">
+            <h2>160</h2>
+            <p>Today's Patients</p>
+        </div>
+        <div class="stat-card">
+            <h2>85</h2>
+            <p>Appointments</p>
+        </div>
+    </div>
+
+    <div class="appointments-section">
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('upcoming')">Upcoming Appointments</div>
+            <div class="tab" onclick="switchTab('today')">Today's Appointments</div>
+        </div>
+
+        <div id="upcoming" class="tab-content">
+            <table>
+                <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>Appointment Date</th>
+                    <th>Purpose</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for appointment in upcoming_appointments %}
+                    <tr>
+                        <td>{{ appointment[1] + " "+appointment[2] }}</td>
+                        <td>{{ appointment[3] }}<br>{{ appointment[4] }}</td>
+                        <td>{{ appointment[5] }}</td>
+                        <td>
+                            <form method="POST" style="display: inline;">
+                                <input type="hidden" name="appointment_id" value="{{ appointment[0] }}">
+                                <button class="status-btn accept" name="action" value="accept">Accept</button>
+                            </form>
+                            <form method="POST" style="display: inline;">
+                                <input type="hidden" name="appointment_id" value="{{ appointment[0] }}">
+                                <button class="status-btn cancel" name="action" value="cancel">Cancel</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <div class="pagination">
+                <button class="page-btn">Previous</button>
+                <button class="page-btn active">1</button>
+                <button class="page-btn">Next</button>
+            </div>
+        </div>
+
+        <div id="today" class="tab-content" style="display: none;">
+            <table>
+                <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>Appointment Time</th>
+                    <th>Purpose</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for appointment in todays_appointments %}
+                    <tr>
+                        <
+                        <td>{{ appointment[1] + " "+appointment[2] }}</td>
+                        <td>{{ appointment[3] }}</td>
+                        <td>{{ appointment[4] }}</td>
+                        <td>{{ appointment[5] }}</td>
+                        <td>
+                            <form action="/doctor/add_note//{{ appointment[0] }}" method="POST" style="display: inline;">
+                                <input type="hidden" name="appointment_id" value="{{ appointment[0] }}">
+                                <button class="status-btn accept" name="action" value="add">Accept</button>
+                            </form>
+                            <form method="POST" style="display: inline;">
+                                <input type="hidden" name="appointment_id" value="{{ appointment[0] }}">
+                                <button class="status-btn cancel" name="action" value="cancel">Cancel</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Simple hover effect for nav items
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('mouseenter', () => {
+            item.style.transform = 'translateY(-2px)';
+        });
+        item.addEventListener('mouseleave', () => {
+            item.style.transform = 'translateY(0)';
+        });
+    });
+
+    // Button hover effects
+    document.querySelectorAll('.status-btn').forEach(btn => {
+        btn.addEventListener('mouseenter', () => {
+            btn.style.opacity = '0.9';
+        });
+        btn.addEventListener('mouseleave', () => {
+            btn.style.opacity = '1';
+        });
+    });
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+        document.querySelector(`#${tab}`).style.display = 'block';
+
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+    }
+
+    function redirectToNotesPage() {
+        window.location.href = "notesPatient.html";
+    }
+
+</script>
+</body>
+</html>

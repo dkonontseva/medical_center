@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarePulse Form</title>
+    <link rel="stylesheet" href="../static/registration.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .error-message {
+            position: fixed;
+            top: 15%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #4a90e2;
+            color: #f8f9fa;
+            padding: 20px;
+            height: 60px;
+            border-radius: 5px;
+            display: none;
+            font-size: 20px;
+        }
+
+        .reg {
+            color: #262626;
+            margin-left: 100px;
+        }
+    </style>
+</head>
+<body>
+<div class="logo">CarePulse</div>
+
+<div class="container">
+    <h1 style="color: #1e1e1e; margin-bottom: 20px">Registration</h1>
+    <div class="form-section">
+
+        <form class="form" action="/registration" method='post'>
+            <div class="form-field">
+                <label for="name">Full name</label>
+                <div class="input-wrapper">
+                    <span class="icon"><i class="fas fa-user"></i></span>
+                    <input type="text" id="name" name="name" placeholder="Adrian Hajdin">
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label for="email">Email address</label>
+                <div class="input-wrapper">
+                    <span class="icon"><i class="fas fa-envelope"></i></span>
+                    <input type="email" id="email" name="email" placeholder="adrian@jsmastery.pro">
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label for="phone">Phone number</label>
+                <div class="input-wrapper">
+                    <span class="icon"><i class="fas fa-phone-alt"></i></span>
+                    <input type="tel" id="phone" name="phone" placeholder="+375 33 1234567">
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label for="password">Password</label>
+                <div class="input-wrapper">
+                    <input type="password" id="password" name="password" placeholder="Enter your password">
+                    <span class="icon toggle-password" onclick="togglePasswordVisibility()">
+                            <i class="fas fa-eye"></i>
+                        </span>
+                </div>
+            </div>
+            <div class="form-field">
+                <label for="repeat_password">Repeat password</label>
+                <div class="input-wrapper">
+                    <input type="password" id="repeat_password" name="repeat_password"
+                           placeholder="Repeat your password">
+                    <span class="icon toggle-rpassword" onclick="togglePasswordVisibility1()">
+                            <i class="fas fa-eye"></i>
+                        </span>
+                </div>
+            </div>
+            <a href="auth.html" class="reg">Have account? Log in!</a>
+            <button type="submit" class="submit-button">Get Started</button>
+        </form>
+    </div>
+
+</div>
+<div id="error-message" class="error-message">{% if error_message %}{{ error_message }}{% endif %}</div>
+{% if error_message %}
+    <script>
+        function showErrorMessage() {
+            var errorMessage = document.getElementById('error-message');
+            errorMessage.style.display = 'block';
+
+            setTimeout(function () {
+                errorMessage.style.display = 'none';
+            }, 3000); // 3000 milliseconds = 3 seconds
+        }
+
+        showErrorMessage();
+    </script>
+{% endif %}
+
+<script>
+    function togglePasswordVisibility() {
+        const passwordField = document.getElementById('password');
+
+        const toggleIcon = document.querySelector('.toggle-password i');
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordField.type = 'password';
+            toggleIcon.classList.remove('fa-eye-slash');
+            toggleIcon.classList.add('fa-eye');
+        }
+    }
+
+    function togglePasswordVisibility1() {
+        const repeatPasswordField = document.getElementById('repeat_password');
+
+        const toggleIcon = document.querySelector('.toggle-rpassword i');
+        if (repeatPasswordField.type === 'password') {
+            repeatPasswordField.type = 'text';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
+        } else {
+            repeatPasswordField.type = 'password';
+            toggleIcon.classList.remove('fa-eye-slash');
+            toggleIcon.classList.add('fa-eye');
+        }
+    }
+</script>
+
+
+</body>
+</html>
