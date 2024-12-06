@@ -250,6 +250,25 @@
             border-bottom: 2px solid #eee;
         }
 
+        .gender-option {
+            display: inline-block;
+            border: 1px dashed rgba(255, 255, 255, 0.6);
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        input[type="radio"] {
+            display: none;
+        }
+
+        input[type="radio"]:checked + .gender-option {
+            background-color: #eef3fd; /* Light neon green */
+            border-color: #6c87ff; /* Neon green border */
+            box-shadow: 0 0 10px rgb(29, 68, 255); /* Neon glow effect */
+        }
+
         .add-more-btn {
             background: #f8f9fa;
             color: #4a90e2;
@@ -381,10 +400,10 @@
         </div>
     </div>
     <div class="nav-menu">
-        <a href="dashboard.html" class="nav-item">Dashboard</a>
+        <a href="/doctor/dashboard" class="nav-item">Dashboard</a>
         <a href="myPatients.html" class="nav-item">My Patients</a>
-        <a href="patientsCards.html" class="nav-item">Patients' cards</a>
-        <a href="profile.html" class="nav-item active">Profile Settings</a>
+        <a href="/doctor/patientsCards" class="nav-item">Patients' cards</a>
+        <a href="/doctor/profile" class="nav-item active">Profile Settings</a>
     </div>
 </div>
 <div class="main-content">
@@ -398,47 +417,53 @@
             <div class="tab" onclick="switchTab('lock')">Change Password</div>
         </div>
         <div id="user" class="tab-content">
-            <form action="/patientProfile" method="post, get">
+            <form action="/doctor/profile" method="post, get">
                 <div class="section-heading">Basic Information</div>
                 <div class="form-grid">
-                    <div class="form-group">
-                        <label>Username</label>
-                        <input type="text" class="form-control" value="dr.darrenelder">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" class="form-control" value="darrenelder@example.com">
-                    </div>
 
                     <div class="form-group">
                         <label>First Name</label>
-                        <input type="text" class="form-control" value="Darren">
+                        <input type="text" class="form-control" name="first_name" value="Darren">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Second Name</label>
+                        <input type="text" class="form-control" name="second_name" value="Darren">
                     </div>
 
                     <div class="form-group">
                         <label>Last Name</label>
-                        <input type="text" class="form-control" value="Elder">
+                        <input type="text" class="form-control" name="last_name" value="Elder">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" class="form-control" name="email" value="darrenelder@example.com">
                     </div>
 
                     <div class="form-group">
                         <label>Phone Number</label>
-                        <input type="tel" class="form-control" value="+1 315 369 5943">
+                        <input type="tel" class="form-control" name="phone_number" value="+1 315 369 5943">
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-field">
                         <label>Gender</label>
-                        <select class="form-control">
-                            <option>Male</option>
-                            <option>Female</option>
-                            <option>Other</option>
-                        </select>
+                        <div class="gender-options">
+                            <input type="radio" id="male" name="gender" value="male"
+                                   {% if user_profile[6] == 'male' %}checked{% endif %}>
+                            <label for="male" class="gender-option">Male</label>
+
+                            <input type="radio" id="female" name="gender" value="female"
+                                   {% if user_profile[6] == 'female' %}checked{% endif %}>
+                            <label for="female" class="gender-option">Female</label>
+
+                            <input type="radio" id="other" name="gender" value="other"
+                                   {% if user_profile[6] == 'other' %}checked{% endif %}>
+                            <label for="other" class="gender-option">Other</label>
+
+                        </div>
                     </div>
 
-                    <div class="form-group full-width">
-                        <label>About Me</label>
-                        <textarea class="form-control">BDS, MDS - Oral & Maxillofacial Surgery with 15 years of experience.</textarea>
-                    </div>
                 </div>
 
                 <div class="section-heading">Services & Specialization</div>

@@ -220,29 +220,30 @@
         </div>
     </div>
     <div class="nav-menu">
-        <a href="dashboard.html" class="nav-item active">Dashboard</a>
+        <a href="/doctor/dashboard" class="nav-item active">Dashboard</a>
         <a href="myPatients.html" class="nav-item">My Patients</a>
-        <a href="patientsCards.html" class="nav-item">Patients' cards</a>
-        <a href="profile.html" class="nav-item">Profile Settings</a>
+        <a href="/doctor/patientsCards" class="nav-item">Patients' cards</a>
+        <a href="/doctor/profile" class="nav-item">Profile Settings</a>
     </div>
 </div>
 
 <div class="main-content">
     <div class="appointment-section">
         <h1 class="appointment-header">Add Appointment</h1>
-        <form method="POST" action="/add_note/{{ appointment[0] }}">
+        <form method="POST" action="/doctor/add_note/{{ patient_id }}">
             <div class="form-group">
                 <label for="date">Date</label>
-                <input type="date" id="date" value="{{ appointment[3] }}" readonly>
+                <input type="date" id="date" name="date" value="{{ request.form.date or today_date }}" required>
             </div>
             <div class="form-group">
                 <label for="doctor-name">Doctor's Name</label>
-                <input type="text" id="doctor-name" class="form-control" value="{{ appointment[5] }}" readonly>
+                <input type="text" id="doctor-name" class="form-control" value="{{ doctor[1] }} {{ doctor[2] }}"
+                       readonly>
             </div>
             <div class="form-group">
                 <label for="patient-name">Patient's Name</label>
-                <input type="text" id="patient-name" class="form-control"
-                       value="{{ appointment[1] }} {{ appointment[2] }}" readonly>
+                <input type="text" id="patient-name" class="form-control" value="{{ patient[0] }} {{ patient[1] }}"
+                       readonly>
             </div>
             <div class="form-group">
                 <label for="symptoms">Complaints</label>

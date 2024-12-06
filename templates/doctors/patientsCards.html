@@ -137,6 +137,7 @@
             text-decoration: none;
             text-align: center;
             display: inline-block;
+            border-color: transparent;
         }
 
         .view-btn:hover {
@@ -172,10 +173,10 @@
         </div>
     </div>
     <div class="nav-menu">
-        <a href="dashboard.html" class="nav-item">Dashboard</a>
+        <a href="/doctor/dashboard" class="nav-item">Dashboard</a>
         <a href="myPatients.html" class="nav-item">My Patients</a>
-        <a href="patientsCards.html" class="nav-item active">Patients' cards</a>
-        <a href="profile.html" class="nav-item">Profile Settings</a>
+        <a href="/doctor/patientsCards" class="nav-item active">Patients' cards</a>
+        <a href="/doctor/profile" class="nav-item">Profile Settings</a>
     </div>
 </div>
 
@@ -184,8 +185,10 @@
     <div class="patients-section">
         <form action="#" method="POST" style="width: 50%; margin-top: 30px; justify-content: center">
             <div class="patients-header">
-                <input type="text" id="searchInput" placeholder="Search patients...">
-                <button type="submit" class="submit-btn">Search</button>
+                <form action="/doctor/patientsCards" method="post">
+                    <input type="text" id="searchInput" name="search_query" placeholder="Search medical card...">
+
+                </form>
             </div>
         </form>
         <button class="submit-btn" onclick="redirectToNotesPage()">
@@ -202,19 +205,18 @@
             </tr>
             </thead>
             <tbody>
-            <!-- Example rows -->
-            <tr>
-                <td>#PT001</td>
-                <td>Richard Wilson</td>
-                <td>19 Nov 2023</td>
-                <td><a href="medicalCard.html" class="view-btn">View</a></td>
-            </tr>
-            <tr>
-                <td>#PT002</td>
-                <td>Charlene Reed</td>
-                <td>15 Nov 2023</td>
-                <td><a href="medicalCard.html" class="view-btn">View</a></td>
-            </tr>
+            {% for medicalnote in medicalCard %}
+                <tr>
+                    <td>{{ medicalnote[3] }}</td>
+                    <td>{{ medicalnote[0] }} {{ medicalnote[1] }}</td>
+                    <td>{{ medicalnote[2] }}</td>
+                    <td>
+                        <form method="GET" action="/doctor/medicalRecord/{{ medicalnote[3] }}">
+                            <button type="submit" class="view-btn">View Details</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
             </tbody>
         </table>
 

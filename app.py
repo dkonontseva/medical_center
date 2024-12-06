@@ -31,8 +31,9 @@ class User:
 user = User(0)
 
 # diana.konontseva@mail.ru diana123
+# doctor: diankabelarus@gmail.com vlad1234
 def contains_forbidden_chars(string):
-    forbidden_chars = [' ', '$', '#', '<', '>', '&', '^', '*', '-', '!', '@', '№', '%', ':', ';', '?', '/', '+', '=',
+    forbidden_chars = [' ', '$', '#', '<', '>', '&', '^', '*', '-', '!', '№', '%', ':', ';', '?', '/', '+', '=',
                        '(', ')', '`', '~', '|', ',']
     for char in forbidden_chars:
         if char in string:
@@ -76,13 +77,11 @@ def index():
 @app.route('/registration', methods=['GET','POST'])
 def registration():
     if request.method=='POST':
-        name = request.form['name']
         email = request.form['email']
-        phone = request.form['phone']
         password = request.form['password']
         repeat_password = request.form['repeat_password']
 
-        if not name or not password:
+        if not email or not password:
             return render_template('registration.html', error_message="Please!!! Fill the gaps.")
 
         if len(password) < 8:
@@ -91,7 +90,7 @@ def registration():
         if password != repeat_password:
             return render_template('registration.html', error_message="Passwords do not match.")
 
-        if contains_forbidden_chars(name) or password_forbidden_chars(password):
+        if contains_forbidden_chars(email) or password_forbidden_chars(password):
             return render_template('registration.html',
                                    error_message="Username and password shouldn't contain specific symbols.")
 
@@ -102,7 +101,7 @@ def registration():
 
         if result[0] > 0:
             return render_template('registration.html',
-                                   error_message="User with this name already exists.")
+                                   error_message="User with this email already exists.")
 
         hashed_password = hashlib.sha256((password + salt).encode()).hexdigest()
 
@@ -110,7 +109,7 @@ def registration():
         cursor.execute("INSERT INTO users(login, password, role_id) VALUES(%s, %s, %s)", (email, hashed_password, 2),)
         conn.commit()
         cursor.close()
-        return render_template('auth.html')
+        return redirect('/login')
     else:
         return render_template('registration.html')
 
@@ -140,7 +139,8 @@ def login():
             }
             token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
             user.set_id(result[0])
-            response = redirect('/patientDashboard')
+            # response = redirect('/patientDashboard')
+            response = redirect('/doctor/dashboard')
             response.set_cookie('token', token)
             return response
         else:
@@ -378,10 +378,12 @@ def bookAppointment():
 
 @app.route('/doctor/dashboard', methods=['GET', 'POST'])
 def doctor_dashboard():
-    doctor_id = user.get_id()
+    cursor = conn.cursor()
+    cursor.execute(""" SELECT _id FROM doctors WHERE user_id = %s""", str(user.get_id()))
+    doctor_id = cursor.fetchone()
+    print(doctor_id)
     today = datetime.now().date()
 
-    cursor = conn.cursor()
     if request.method == 'POST':
         action = request.form.get('action')
         appointment_id = request.form.get('appointment_id')
@@ -401,58 +403,139 @@ def doctor_dashboard():
 
     cursor.execute("""
         SELECT a._id, p.first_name, p.last_name, a.date, a.time, a.purpose, a.status
-        FROM appointments a
+        FROM talons a
         JOIN patients p ON a.patient_id = p._id
-        WHERE a.doctor_id = %s AND a.date > %s
+        WHERE a.doctor_id = %s AND a.date > %s AND a.status != 'cancelled'
         ORDER BY a.date, a.time
     """, (doctor_id, today))
     upcoming_appointments = cursor.fetchall()
 
     cursor.execute("""
-        SELECT a._id, p.first_name, p.last_name, a.time, a.purpose, a.status
-        FROM appointments a
+        SELECT a._id, p.first_name, p.last_name, a.time, a.purpose, a.status,  a.patient_id
+        FROM talons a
         JOIN patients p ON a.patient_id = p._id
-        WHERE a.doctor_id = %s AND a.date = %s
+        WHERE a.doctor_id = %s AND a.date = %s AND a.status != 'cancelled'
         ORDER BY a.time
     """, (doctor_id, today))
     today_appointments = cursor.fetchall()
+    print(today_appointments)
 
     cursor.close()
     return render_template('doctors/dashboard.html',
                            upcoming_appointments=upcoming_appointments,
                            today_appointments=today_appointments)
 
-@app.route('/doctor/add_note/<int:appointment_id>', methods=['GET', 'POST'])
-def add_note(appointment_id):
+@app.route('/doctor/add_note/<int:patient_id>', methods=['GET', 'POST'])
+def add_note(patient_id):
     cursor = conn.cursor()
+    # Получение данных врача
+    cursor.execute(""" SELECT _id, first_name, last_name FROM doctors WHERE user_id = %s""", (str(user.get_id()),))
+    doctor = cursor.fetchone()
 
     if request.method == 'POST':
-        doctor_id = user.get_id()
-        date=request.form.get('date')
+        # Получение данных из формы
+        date = request.form.get('date')
         symptoms = request.form.get('symptoms')
         results = request.form.get('results')
         diagnosis = request.form.get('diagnosis')
-        action = request.form.get('action')
-        if action == 'add':
-            cursor.execute("SELECT patient_id from talons where _id=%s", str(appointment_id))
-            patient_id = cursor.fetchone()
-            cursor.execute("INSERT INTO medical_card(patient_id, doctor_id, date, complaints, wellness_check, disease) "
-                           "VALUES (%s, %s, %s, %s, %s, %s)", str(patient_id[0]),str(doctor_id), datetime(date),
-                           symptoms,results,diagnosis)
-            conn.commit()
-            cursor.close()
 
-            return redirect('/doctor/dashboard')
+        cursor.execute("""
+            INSERT INTO medical_card (patient_id, doctor_id, date, complaints, wellness_check, disease)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (patient_id, doctor[0], date, symptoms, results, diagnosis))
+        conn.commit()
+        cursor.close()
 
-        elif action == 'cancel':
+        return redirect('/doctor/dashboard')
+
+    cursor.execute("""
+        SELECT first_name, last_name FROM patients WHERE _id = %s
+    """, (patient_id,))
+    patient = cursor.fetchone()
+
+    cursor.close()
+
+    return render_template('doctors/notesPatient.html', patient=patient, doctor=doctor, patient_id=patient_id)
+
+@app.route('/doctor/patientsCards', methods=['GET','POST'])
+def patientsCards():
+    cursor = conn.cursor()
+    if request.method == 'POST':
+        search_query = request.form.get('search_query', '').strip()
+        search_query = f"%{search_query}%"
+        cursor.execute("""
+                SELECT patients.first_name, patients.last_name, medical_card.date, medical_card._id
+                FROM medical_card
+                JOIN patients ON medical_card.patient_id = patients._id
+                JOIN doctors ON medical_card.doctor_id = doctors._id
+                WHERE doctors.user_id = %s AND (patients.first_name ILIKE %s OR patients.second_name ILIKE %s);
+            """, (user.get_id(), search_query, search_query))
+        search = cursor.fetchall()
+        print(search)
+        return render_template('doctors/patientsCards.html', medicalCard=search)
+
+    if(request.method == 'GET'):
+        cursor.execute("""SELECT patients.first_name, patients.last_name, medical_card.date, medical_card._id FROM medical_card 
+                                join patients on medical_card.patient_id=patients._id 
+                                join doctors on medical_card.doctor_id = doctors._id
+                                where doctors.user_id=%s ORDER BY medical_card.date DESC """, (str(user.get_id())))
+        result=cursor.fetchall()
+        cursor.close()
+        return render_template('doctors/patientsCards.html', medicalCard=result)
+
+@app.route('/doctor/medicalRecord/<int:record_id>', methods=['GET'])
+def medical_record_doctor(record_id):
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT mc.*, 
+               p.first_name || ' ' || p.last_name AS patient_name, p.b_day,
+               d.first_name || ' ' || d.last_name AS doctor_name
+        FROM medical_card mc
+        JOIN patients p ON mc.patient_id = p._id
+        JOIN doctors d ON mc.doctor_id = d._id
+        WHERE mc._id = %s""", (record_id,))
+    record = cursor.fetchone()
+    cursor.close()
+
+    return render_template('doctors/medicalCard.html', record=record)
+
+@app.route('/doctor/profile', methods=['GET','POST'])
+def doctor_profile():
+    cursor = conn.cursor()
+
+    if request.method=='GET':
+        cursor.execute("SELECT first_name, last_name, second_name, phone_number, login, gender, country, "
+                       "city, street, house, flat, addresses._id  from doctors join addresses on doctors.address_id = addresses._id "
+                       "join users on doctors.user_id=users._id "
+                       "where user_id=%s", (str(user.get_id())))
+        result = cursor.fetchone()
+        print(result)
+        return render_template('patients/profile.html', user_profile=result)
+
+    elif request.method == 'POST':
+            first_name = request.form.get('first_name')
+            last_name = request.form.get('last_name')
+            second_name = request.form.get('second_name')
+            email = request.form.get('email')
+            phone_number = request.form.get('phone_number')
+            gender = request.form.get('gender')
+
             cursor.execute("""
-                           UPDATE talons
-                           SET status = 'cancelled'
-                           WHERE _id = %s AND doctor_id = %s
-                       """, (appointment_id, doctor_id))
+                UPDATE doctors
+                SET first_name = %s, last_name = %s, second_name = %s, phone_number = %s, gender = %s
+                WHERE user_id = %s
+            """, (str(first_name), str(last_name), str(second_name), str(email), str(phone_number), str(gender), str(user.get_id())))
             conn.commit()
+
+            cursor.execute("""
+                           UPDATE users
+                           SET login = %s
+                           WHERE user_id = %s""", (str(user.get_id())))
+            conn.commit()
+
             cursor.close()
-            return redirect('/doctor/dashboard')
+            return redirect('/doctor/profile')
+
 @app.route('/addpatient', methods=['GET','POST'])
 # @token_required
 def addpatient():
@@ -465,9 +548,6 @@ def addpatient():
         address=request.form['address']
         dob=request.form['dob']
         gender=request.form['gender']
-        medicalCard=request.form['medicalCard']
-        lastVisit=request.form['lastVisit']
-        medicalHistory=request.form['medicalHistory']
 
         cursor = conn.cursor()
         query= "INSERT INTO patients(first_name, last_name, second_name, phone_number, email, b_day) VALUES(%s,%s, %s, %s, %s, %s)"
@@ -479,6 +559,61 @@ def addpatient():
     else:
         return render_template('addPatient.html')
 
+@app.route('/admin/adminDashboard', methods=['GET','POST'])
+def admin_dashboard():
+    return render_template('adminDashboard.html')
+
+@app.route('/admin/patientsList', methods=['GET','POST'])
+def admin_patientsList():
+    cursor = conn.cursor()
+    if(request.method == 'GET'):
+        cursor.execute("SELECT patients.first_name, patients.last_name, patients.second_name, patients.phone_number, "
+                       "patients.gender,medical_card._id, country, city, street, house, flat "
+                       "FROM patients JOIN adresses on adresses._id=atients.adress_id "
+                       "JOIN medical_card on medical_card.patient_id = patients._id "
+                       "ORDER BY patients.last_name ASC")
+        result = cursor.fetchall()
+        cursor.close()
+        return render_template('patientsList.html', patients=result)
+    if(request.method == 'POST'):
+        search_query = request.form.get('search_query', '').strip()
+        search_query = f"%{search_query}%"
+        cursor.execute("""
+                        SELECT patients.first_name, patients.last_name, patients.second_name, patients.phone_number, 
+                       patients.gender,medical_card._id, country, city, street, house, flat 
+                       FROM patients JOIN adresses on adresses._id=atients.adress_id 
+                       JOIN medical_card on medical_card.patient_id = patients._id 
+                       WHERE patients.first_name ILIKE %s OR patients.second_name ILIKE %s
+                       ORDER BY patients.last_name ASC;""", (search_query, search_query))
+        search = cursor.fetchall()
+        print(search)
+        return render_template('patientsList.html', medicalCard=search)
+
+@app.route('/admin/doctorsList', methods=['GET','POST'])
+def admin_doctorsList():
+    cursor = conn.cursor()
+    if (request.method == 'GET'):
+        cursor.execute("SELECT patients.first_name, patients.last_name, patients.second_name, patients.phone_number, "
+                       "patients.gender,medical_card._id, country, city, street, house, flat "
+                       "FROM patients JOIN adresses on adresses._id=atients.adress_id "
+                       "JOIN medical_card on medical_card.patient_id = patients._id "
+                       "ORDER BY patients.last_name ASC")
+        result = cursor.fetchall()
+        cursor.close()
+        return render_template('doctorsList.html', patients=result)
+    if (request.method == 'POST'):
+        search_query = request.form.get('search_query', '').strip()
+        search_query = f"%{search_query}%"
+        cursor.execute("""
+                            SELECT patients.first_name, patients.last_name, patients.second_name, patients.phone_number, 
+                           patients.gender,medical_card._id, country, city, street, house, flat 
+                           FROM patients JOIN adresses on adresses._id=atients.adress_id 
+                           JOIN medical_card on medical_card.patient_id = patients._id 
+                           WHERE patients.first_name ILIKE %s OR patients.second_name ILIKE %s
+                           ORDER BY patients.last_name ASC;""", (search_query, search_query))
+        search = cursor.fetchall()
+        print(search)
+        return render_template('doctorsList.html', medicalCard=search)
 
 if __name__ == '__main__':
     app.run(debug=True)

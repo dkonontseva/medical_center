@@ -200,10 +200,10 @@
         </div>
     </div>
     <div class="nav-menu">
-        <a href="dashboard.html" class="nav-item active">Dashboard</a>
+        <a href="/doctor/dashboard" class="nav-item active">Dashboard</a>
         <a href="myPatients.html" class="nav-item">My Patients</a>
-        <a href="patientsCards.html" class="nav-item">Patients' cards</a>
-        <a href="profile.html" class="nav-item">Profile Settings</a>
+        <a href="/doctor/patientsCards" class="nav-item">Patients' cards</a>
+        <a href="/doctor/profile" class="nav-item">Profile Settings</a>
     </div>
 </div>
 
@@ -279,23 +279,19 @@
                 </tr>
                 </thead>
                 <tbody>
-                {% for appointment in todays_appointments %}
+                {% for appointment in today_appointments %}
                     <tr>
-                        <
                         <td>{{ appointment[1] + " "+appointment[2] }}</td>
                         <td>{{ appointment[3] }}</td>
                         <td>{{ appointment[4] }}</td>
-                        <td>{{ appointment[5] }}</td>
                         <td>
-                            <form action="/doctor/add_note//{{ appointment[0] }}" method="POST" style="display: inline;">
-                                <input type="hidden" name="appointment_id" value="{{ appointment[0] }}">
-                                <button class="status-btn accept" name="action" value="add">Accept</button>
-                            </form>
+                            <a href="/doctor/add_note/{{ appointment[6] }}" class="status-btn accept">Add Note</a>
                             <form method="POST" style="display: inline;">
-                                <input type="hidden" name="appointment_id" value="{{ appointment[0] }}">
+                                <input type="hidden" name="appointment_id" value="{{ appointment[6] }}">
                                 <button class="status-btn cancel" name="action" value="cancel">Cancel</button>
                             </form>
                         </td>
+
                     </tr>
                 {% endfor %}
 

@@ -425,7 +425,9 @@
                     <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
-            <button class="search-button">Search</button>
+            <form action="/admin/patientsList" method="post">
+                <input type="text" id="searchInput" name="search_query" placeholder="Search medical card...">
+            </form>
         </div>
         <div class="export-buttons">
             <button class="export-btn"><i class="far fa-file-pdf" style="color: #FF5C75;"></i></button>
@@ -536,7 +538,6 @@
 </div>
 
 <script>
-    // Интерактивность меню
     document.querySelectorAll('.menu-item').forEach(item => {
         item.addEventListener('click', function () {
             document.querySelector('.menu-item.active')?.classList.remove('active');
@@ -544,12 +545,10 @@
         });
     });
 
-    // Функциональность поиска
     document.querySelector('.search-bar input').addEventListener('input', function (e) {
         console.log('Searching for:', e.target.value);
     });
 
-    // Обработка экспорта
     document.querySelectorAll('.export-btn').forEach(btn => {
         btn.addEventListener('click', function () {
             console.log('Exporting...');

@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medical Record Report</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -74,48 +75,48 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Medical Record Report</h1>
+<div class="container">
+    <h1>Medical Record Report</h1>
 
-        <div class="report-section">
-            <h2>Patient Details</h2>
-            <div class="report-details">
-                <p><span>Patient ID:</span> PT001</p>
-                <p><span>Name:</span> Richard Wilson</p>
-                <p><span>Age:</span> 32</p>
-                <p><span>Last Visit:</span> 12 Nov 2023</p>
-            </div>
+    <div class="report-section">
+        <h2>Patient Details</h2>
+        <div class="report-details">
+            <p><span>Patient Name:</span> {{ record[7] }}</p>
+            <p><span>Birth Day:</span> {{ record[8] }}</p>
+            <p><span>Date:</span> {{ record[3] }}</p>
         </div>
-
-        <div class="report-section">
-            <h2>Symptoms</h2>
-            <div class="report-details">
-                <p>Persistent cough, fever, and fatigue.</p>
-            </div>
-        </div>
-
-        <div class="report-section">
-            <h2>Examination Results</h2>
-            <div class="report-details">
-                <p>Normal blood pressure, slight respiratory infection observed.</p>
-            </div>
-        </div>
-
-        <div class="report-section">
-            <h2>Diagnosis</h2>
-            <div class="report-details">
-                <p>Respiratory tract infection.</p>
-            </div>
-        </div>
-
-        <div class="report-section">
-            <h2>Prescribed Treatment</h2>
-            <div class="report-details">
-                <p>Amoxicillin 500 mg, twice a day for 7 days. Paracetamol for fever.</p>
-            </div>
-        </div>
-
-        <button class="print-btn" onclick="window.print()">Print Report</button>
     </div>
+
+    <div class="report-section">
+        <h2>Doctor</h2>
+        <div class="report-details">
+            <p><span>Doctor:</span> {{ record[9] }}</p>
+        </div>
+    </div>
+
+    <div class="report-section">
+        <h2>Symptoms</h2>
+        <div class="report-details">
+            <p>{{ record[4] }}</p>
+        </div>
+    </div>
+
+    <div class="report-section">
+        <h2>Examination Results</h2>
+        <div class="report-details">
+            <p>{{ record[5] }}</p>
+        </div>
+    </div>
+
+    <div class="report-section">
+        <h2>Diagnosis</h2>
+        <div class="report-details">
+            <p>{{ record[6] }}</p>
+        </div>
+    </div>
+
+    <button class="print-btn" onclick="window.print()">Print Report</button>
+    <a href="/doctor/patientsCards" class="print-btn" style="background-color: #757575;">Back to Patients Cards</a>
+</div>
 </body>
 </html>
