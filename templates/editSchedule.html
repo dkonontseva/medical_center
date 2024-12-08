@@ -8,7 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
           rel="stylesheet">
     <style>
         * {
@@ -17,6 +17,7 @@
             box-sizing: border-box;
             font-family: 'Poppins', sans-serif;
         }
+
         :root {
             --primary-color: #4a90e2;
             --background-color: #F3F6F9;
@@ -211,7 +212,7 @@
         }
 
         button {
-            background-color: #4fd1c5;
+            background-color: #4a90e2;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -237,12 +238,12 @@
 
         .header {
             margin-bottom: 20px;
-            color: #4fd1c5;
+            color: #4a90e2;
             font-size: 16px;
         }
 
         .breadcrumb {
-            color: #4fd1c5;
+            color: #4a90e2;
             text-decoration: none;
         }
 
@@ -309,7 +310,7 @@
             margin-top: 30px;
             width: 200px;
             padding: 15px;
-            background-color: #3a57e8;
+            background-color: #4a90e2;
             border: none;
             border-radius: 8px;
             color: white;
@@ -326,7 +327,7 @@
             background-color: white;
             border: none;
             border-radius: 8px;
-            color: #3a57e8;
+            color: #4a90e2;
             font-size: 1.2em;
             cursor: pointer;
             transition: background-color 0.3s ease;
@@ -334,14 +335,14 @@
         }
 
         .submit-button:hover {
-            background-color: #6c87ff;
+            background-color: #4a90e2;
         }
 
         .cancel-button:hover {
             background-color: #cccccc;
         }
 
-       .flatpickr-time {
+        .flatpickr-time {
             background-color: #2e2e2e;
             color: white;
             border-radius: 10px;
@@ -460,67 +461,52 @@
     <div class="main-content">
         <div class="header">
             <h2>Doctor Schedule</h2>
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search here">
-            </div>
         </div>
 
         <div class="container1">
             <div class="header">
-                <a href="#" class="breadcrumb">Doctor Schedule</a> &gt; <span
-                    class="breadcrumb-active">Edit Schedule</span>
+                <a href="/admin/scheduleList" class="breadcrumb">Doctor Schedule</a>
             </div>
             <section class="edit-schedule">
-                <h2>Edit Schedule</h2>
-                <form id="edit-schedule-form">
+                <h2>{{ 'Edit Schedule' if schedule_id else 'Create Schedule' }}</h2>
+                <form id="edit-schedule-form" method="POST"
+                      action="{{ url_for('add_schedule', schedule_id=schedule_id) if schedule_id else url_for('add_schedule') }}">
                     <div class="form-row">
                         <div class="form-group">
                             <label for="doctor-name">Doctor Name *</label>
-                            <input type="text" id="doctor-name" value="Dr. William Stephin" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label for="department">Department *</label>
-                            <select id="department">
-                                <option>Choose Department</option>
-                                <option>Cardiology</option>
-                                <option>Neurology</option>
-                                <!-- Add more departments as needed -->
-                            </select>
+                            <input type="text" id="doctor-name" name="doctor_name"
+                                   value="{{ leave[0] }} {{ leave[1] }} {{ leave[2] }}"
+                                    {{ 'readonly' if schedule_id }}>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="available-days">Available Days *</label>
-                            <input type="date" id="available-days" value="2022-11-28">
+                            <input type="date" id="available-days" name="available-days"
+                                   value="{{ leave[3] if leave else '' }}" required>
                         </div>
                         <div class="form-group">
                             <label for="from-time">From *</label>
-                            <input type="time" id="from-time" value="09:00">
+                            <input type="time" id="from-time" name="from_date"
+                                   value="{{ leave[4] if leave else '' }}" required>
                         </div>
                         <div class="form-group">
                             <label for="to-time">To *</label>
-                            <input type="time" id="to-time" value="18:00">
+                            <input type="time" id="to-time" name="to_date"
+                                   value="{{ leave[5] if leave else '' }}" required>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="notes">Notes *</label>
-                        <textarea id="notes" placeholder="Enter any notes..."></textarea>
-                    </div>
-                    <div class="form-group status-group">
-                        <label>Status *</label>
-                        <input type="radio" id="active" name="status" value="active" checked>
-                        <label for="active">Active</label>
-                        <input type="radio" id="inactive" name="status" value="inactive">
-                        <label for="inactive">Inactive</label>
-                    </div>
                     <div class="button-group">
-                        <button type="submit" class="submit-button">Create Schedule</button>
-                        <button type="button" class="cancel-button" onclick="cancelEdit()">Cancel</button>
+                        <button type="submit"
+                                class="submit-button">{{ 'Save Changes' if schedule_id else 'Create Schedule' }}</button>
+                        <button type="button" class="cancel-button"
+                                onclick="window.location.href='/admin/scheduleList';">Cancel
+                        </button>
                     </div>
                 </form>
             </section>
         </div>
+
     </div>
 </div>
 
@@ -556,19 +542,19 @@
         static: true, // Calendar is static on the page
         position: "above" // Position of the calendar
     });
-     flatpickr("#from-time", {
-            enableTime: true,
-            noCalendar: true,
-            dateFormat: "H:i",
-            time_24hr: true
-        });
+    flatpickr("#from-time", {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i",
+        time_24hr: true
+    });
 
-        flatpickr("#to-time", {
-            enableTime: true,
-            noCalendar: true,
-            dateFormat: "H:i",
-            time_24hr: true
-        });
+    flatpickr("#to-time", {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i",
+        time_24hr: true
+    });
 </script>
 </body>
 </html>

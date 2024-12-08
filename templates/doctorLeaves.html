@@ -257,21 +257,41 @@
         }
 
         .status-approved {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
             background: rgba(43, 193, 85, 0.1);
             color: var(--success-color);
         }
 
         .status-pending {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
             background: rgba(255, 167, 85, 0.1);
             color: var(--warning-color);
         }
 
         .status-declined {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
             background: rgba(255, 92, 117, 0.1);
             color: var(--danger-color);
         }
 
         .status-new {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
             background: rgba(142, 68, 173, 0.1);
             color: var(--new-color);
         }
@@ -320,10 +340,8 @@
         }
 
         .export-buttons {
-            position: absolute;
-            top: 20px;
-            right: 25px;
             display: flex;
+            margin-bottom: 10px;
             gap: 8px;
         }
 
@@ -391,7 +409,7 @@
         </div>
         <div class="menu-item">
             <i class="fas fa-th-large"></i>
-            <a href="adminDashboard.html">Dashboard</a>
+            <a href="/admin/adminDashboard">Dashboard</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-user-md"></i>
@@ -399,19 +417,19 @@
         </div>
         <div class="menu-item">
             <i class="fas fa-users"></i>
-            <a href="patientsList.html">Patients</a>
+            <a href="/admin/patientsList">Patients</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-calendar-alt"></i>
-            <a href="appointmentList.html">Appointments</a>
+            <a href="/admin/appointmentList">Appointments</a>
         </div>
         <div class="menu-item">
             <i class="far fa-clock"></i>
-            <a href="scheduleList.html">Doctor Schedule</a>
+            <a href="/admin/scheduleList">Doctor Schedule</a>
         </div>
         <div class="menu-item active">
             <i class="fas fa-hospital"></i>
-            <a href="doctorLeaves.html">Doctor Leaves</a>
+            <a href="/admin/doctorLeaves">Doctor Leaves</a>
         </div>
     </div>
 
@@ -419,33 +437,30 @@
     <div class="main-content">
         <div class="header">
             <h2>Leave Request</h2>
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search here">
+        </div>
+
+        <form method="POST" action="/admin/doctorLeaves">
+            <div class="filters" style="display: flex; gap: 15px; align-items: center;">
+                <input type="text" name="search_query" class="filter-input" placeholder="Search by doctor name">
+                <select name="leave_type" class="filter-input">
+                    <option value="Medical Leave">Medical Leave</option>
+                    <option value="Casual Leave">Casual Leave</option>
+                    <option value="Casual Leave">Family Reason</option>
+                </select>
+                <input type="date" name="from_date" id="date" class="filter-input" value="{{ current_date }}">
+                <input type="date" name="to_date" id="date" class="filter-input" value="{{ current_date }}">
+                <select name="status" class="filter-input">
+                    <option value="">Leave Status</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Declined">Declined</option>
+                </select>
+                <button type="submit" class="search-button">Search</button>
             </div>
-        </div>
-
-        <!-- Filters -->
-        <div class="filters">
-            <input type="text" class="filter-input" placeholder="Employee Name">
-            <select class="filter-input">
-                <option value="">Select Leave Type</option>
-                <option>Medical Leave</option>
-                <option>Casual Leave</option>
-            </select>
-            <input type="date" id="date" class="filter-input">
-            <input type="date" id="date" class="filter-input">
-            <select class="filter-input">
-                <option value="">Leave Status</option>
-                <option>Approved</option>
-                <option>Pending</option>
-                <option>Declined</option>
-            </select>
-        </div>
-
+        </form>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <div class="action-buttons">
-                <button class="action-btn add-btn" onclick="redirectToPage()">
+                <button class="action-btn add-btn" onclick="window.location.href = '/admin/addLeave'">
                     <i class="fas fa-plus"></i>
                     Add New
                 </button>
@@ -453,20 +468,21 @@
                     <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
-            <button class="search-button">Search</button>
+        </div>
+        <div class="export-buttons">
+            <button class="export-btn"><i class="far fa-file-pdf" style="color: #FF5C75;"></i></button>
+            <button class="export-btn"><i class="far fa-file-excel" style="color: #2BC155;"></i></button>
+            <button class="export-btn"><i class="far fa-file-word" style="color: #3B4CB8;"></i></button>
+            <button class="export-btn"><i class="far fa-file" style="color: #8E44AD;"></i></button>
         </div>
 
         <!-- Table -->
         <div class="table-container">
-            <div class="export-buttons">
-                <button class="export-btn"><i class="far fa-file-pdf" style="color: #FF5C75;"></i></button>
-                <button class="export-btn"><i class="far fa-file-excel" style="color: #2BC155;"></i></button>
-                <button class="export-btn"><i class="far fa-file-word" style="color: #3B4CB8;"></i></button>
-                <button class="export-btn"><i class="far fa-file" style="color: #8E44AD;"></i></button>
-            </div>
+
             <table>
                 <thead>
                 <tr>
+                    <th><input type="hidden"></th>
                     <th>Doctor Name</th>
                     <th>Leave Type</th>
                     <th>From</th>
@@ -474,56 +490,37 @@
                     <th>No of days</th>
                     <th>Reason</th>
                     <th>Status</th>
+                    <th>Action</th>
                     <th></th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=2" class="avatar">
-                            <span class="employee-name">Andrea Lalema</span>
-                        </div>
-                    </td>
-                    <td>Medical Leave</td>
-                    <td>02.10.2022</td>
-                    <td>04.10.2022</td>
-                    <td>2 Days</td>
-                    <td>Not Feeling well</td>
-                    <td><span class="status-badge status-approved">Approved</span></td>
-                    <td class="actions-cell"><i class="fas fa-ellipsis-v"></i></td>
-                </tr>
-                <tr>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=3" class="avatar">
-                            <span class="employee-name">Smith Bruklin</span>
-                        </div>
-                    </td>
-                    <td>Casual Leave</td>
-                    <td>04.10.2022</td>
-                    <td>06.10.2022</td>
-                    <td>2 Days</td>
-                    <td>Going to Vacation</td>
-                    <td><span class="status-badge status-pending">Pending</span></td>
-                    <td class="actions-cell"><i class="fas fa-ellipsis-v"></i></td>
-                </tr>
-                <tr>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=4" class="avatar">
-                            <span class="employee-name">William Stephin</span>
-                        </div>
-                    </td>
-                    <td>Casual Leave</td>
-                    <td>02.10.2022</td>
-                    <td>04.10.2022</td>
-                    <td>2 Days</td>
-                    <td>Family Function</td>
-                    <td><span class="status-badge status-declined">Declined</span></td>
-                    <td class="actions-cell"><i class="fas fa-ellipsis-v"></i></td>
-                </tr>
+                    {% for doctorLeave in doctorLeaves %}
+                        <tr>
+                            <td><input type="checkbox" name="selectedRows" value="{{ doctorLeave[8] }}"></td>
+                            <td>{{ doctorLeave[0] }} {{ doctorLeave[1] }} {{ doctorLeave[2] }}</td>
+                            <td>{{ doctorLeave[3] }}</td>
+                            <td>{{ doctorLeave[4] }}</td>
+                            <td>{{ doctorLeave[5] }}</td>
+                            <td>{{ doctorLeave[9] }}</td>
+                            <td>{{ doctorLeave[6] }}</td>
+                            <td>
+                                <span class="status-{{ doctorLeave[7] | lower }}">{{ doctorLeave[7] }}</span>
+                            </td>
+                            <td>
+                                <button class="download-btn"
+                                        style="background-color: transparent; border-color: transparent"
+                                        onclick="editLeave('{{ doctorLeave[8] }}')">
+                                    <img width="40" height="40"
+                                         src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
+                                         alt="pencil--v2"/>
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
                 </tbody>
+
             </table>
 
             <div class="pagination">
@@ -561,8 +558,8 @@
         });
     });
 
-    function redirectToPage() {
-        window.location.href = "editLeaves.html";
+    function editLeave(leaveId) {
+        window.location.href = `/admin/addLeave/${leaveId}`;
     }
 </script>
 </body>

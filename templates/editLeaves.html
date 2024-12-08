@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
           rel="stylesheet">
     <style>
         * {
@@ -211,7 +211,7 @@
         }
 
         button {
-            background-color: #4fd1c5;
+            background-color: #4a90e2;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -237,12 +237,12 @@
 
         .header {
             margin-bottom: 20px;
-            color: #4fd1c5;
+            color: #4a90e2;
             font-size: 16px;
         }
 
         .breadcrumb {
-            color: #4fd1c5;
+            color: #4a90e2;
             text-decoration: none;
         }
 
@@ -434,32 +434,28 @@
     <!-- Main Content -->
     <div class="main-content">
         <div class="header">
-            <h2>Doctor Schedule</h2>
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search here">
-            </div>
+            <h2>Doctor Leave</h2>
         </div>
 
         <div class="container1">
             <div class="header">
-                <a href="#" class="breadcrumb">Doctor Leave</a> &gt; <span
-                    class="breadcrumb-active">Edit Leave</span>
+                <a href="/admin/doctorLeaves" class="breadcrumb">Doctor Leave</a>
             </div>
             <section class="edit-schedule">
                 <h2>Edit Leave</h2>
-                <form id="edit-schedule-form">
+                <form method="POST"
+                      action="{{ url_for('admin_addLeave', leave_id=leave_id) if leave_id else url_for('admin_addLeave') }}">
                     <div class="form-row">
                         <div class="form-group">
                             <label for="doctor-name">Doctor Name *</label>
-                            <input type="text" id="doctor-name" value="Dr. William Stephin" readonly>
+                            <input type="text" name="doctor_name" id="doctor-name" value="{{ leave[5] }} {{ leave[6] }} {{ leave[7] }}">
                         </div>
                         <div class="form-group">
                             <label for="leave-type">Leave Typ *</label>
-                            <select id="leave-type">
-                                <option>Medical Reason</option>
-                                <option>Casual Leave</option>
-                                <option>Family Reason</option>
+                            <select id="leave-type" name="leave_type">
+                                <option {{ 'selected' if leave and leave[0] == 'Medical Reason' }}>Medical Reason</option>
+                                <option {{ 'selected' if leave and leave[0] == 'Casual Leave' }}>Casual Leave</option>
+                                <option {{ 'selected' if leave and leave[0] == 'Family Reason' }}>Family Reason</option>
                             </select>
                         </div>
                     </div>
@@ -467,29 +463,35 @@
 
                         <div class="form-group">
                             <label for="from-date">From *</label>
-                            <input type="date" id="from-date">
+                            <input type="date" id="from-date" name="from_date" value="{{ leave[1] if leave else '' }}">
                         </div>
                         <div class="form-group">
                             <label for="to-date">To *</label>
-                            <input type="date" id="to-date">
+                            <input type="date" id="to-date" name="to_date" value="{{ leave[2] if leave else '' }}">
                         </div>
                     </div>
                     <div class="form-group">
                         <label for="notes">Notes *</label>
-                        <textarea id="notes" placeholder="Enter any notes..."></textarea>
+                        <textarea id="notes" name="notes">{{ leave[3] if leave else '' }}</textarea>
                     </div>
                     <div class="form-group status-group">
                         <label>Status *</label>
-                        <input type="radio" id="approved" name="status" value="approved" checked>
+                        <input type="radio" id="approved" name="status"
+                               value="Approved" {{ 'checked' if leave and leave[4] == 'Approved' }}>
                         <label for="approved">Approved</label>
-                        <input type="radio" id="pending" name="status" value="pending">
+                        <input type="radio" id="pending" name="status"
+                               value="Pending" {{ 'checked' if leave and leave[4] == 'Pending' }}>
                         <label for="pending">Pending</label>
-                        <input type="radio" id="diclined" name="status" value="diclined" >
-                        <label for="diclined">Diclined</label>
+                        <input type="radio" id="declined" name="status"
+                               value="Declined" {{ 'checked' if leave and leave[4] == 'Declined' }}>
+                        <label for="declined">Declined</label>
                     </div>
                     <div class="button-group">
-                        <button type="submit" class="submit-button">Save Leave</button>
-                        <button type="button" class="cancel-button" onclick="cancelEdit()">Cancel</button>
+                        <button type="submit"
+                                class="submit-button">{{ 'Save Changes' if leave_id else 'Create Leave' }}</button>
+                        <button type="button" class="cancel-button"
+                                onclick="window.location.href='/admin/doctorLeaves';">Cancel
+                        </button>
                     </div>
                 </form>
             </section>
@@ -518,27 +520,16 @@
         });
     });
 
-    flatpickr("#from-date","#to-date", {
-        dateFormat: "Y-m-d",
-        altInput: true,
-        altFormat: "F j, Y",
-        allowInput: true,
-        onReady: function (selectedDates, dateStr, instance) {
-            instance.element.setAttribute('placeholder', 'Select your date of birth');
-        },
-        static: true, // Calendar is static on the page
-        position: "above" // Position of the calendar
+    flatpickr("#from-date", {
+        dateFormat: "d-m-y", // Устанавливаем формат даты
+        defaultDate: new Date(), // Устанавливаем текущую дату
+        static: true // Стационарное отображение календаря
     });
-        flatpickr("#to-date", {
-        dateFormat: "Y-m-d",
-        altInput: true,
-        altFormat: "F j, Y",
-        allowInput: true,
-        onReady: function (selectedDates, dateStr, instance) {
-            instance.element.setAttribute('placeholder', 'Select your date of birth');
-        },
-        static: true, // Calendar is static on the page
-        position: "above" // Position of the calendar
+
+    flatpickr("#to-date", {
+        dateFormat: "d-m-y", // Устанавливаем формат даты
+        defaultDate: new Date(), // Устанавливаем текущую дату
+        static: true // Стационарное отображение календаря
     });
 
 </script>

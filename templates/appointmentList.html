@@ -9,7 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
           rel="stylesheet">
     <style>
         * {
@@ -204,7 +204,7 @@
             color: #8A92A6;
         }
 
-         .filter-input:focus {
+        .filter-input:focus {
             border-color: #4a90e2;
             outline: none;
             box-shadow: 0 0 0 3px rgba(9, 220, 164, 0.1);
@@ -279,21 +279,35 @@
             display: inline-block;
         }
 
-        .status-approved {
+       .status-approved {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
             background: rgba(43, 193, 85, 0.1);
             color: var(--success-color);
         }
 
         .status-pending {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
             background: rgba(255, 167, 85, 0.1);
             color: var(--warning-color);
         }
 
         .status-declined {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
             background: rgba(255, 92, 117, 0.1);
             color: var(--danger-color);
         }
-
         .status-new {
             background: rgba(142, 68, 173, 0.1);
             color: var(--new-color);
@@ -448,7 +462,7 @@
         </div>
         <div class="menu-item">
             <i class="fas fa-th-large"></i>
-            <a href="adminDashboard.html">Dashboard</a>
+            <a href="/admin/adminDashboard">Dashboard</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-user-md"></i>
@@ -456,19 +470,19 @@
         </div>
         <div class="menu-item">
             <i class="fas fa-users"></i>
-            <a href="patientsList.html">Patients</a>
+            <a href="/admin/patientsList">Patients</a>
         </div>
         <div class="menu-item active">
             <i class="fas fa-calendar-alt"></i>
-            <a href="appointmentList.html">Appointments</a>
+            <a href="/admin/appointmentList">Appointments</a>
         </div>
         <div class="menu-item">
             <i class="far fa-clock"></i>
-            <a href="scheduleList.html">Doctor Schedule</a>
+            <a href="/admin/scheduleList">Doctor Schedule</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-hospital"></i>
-            <a href="doctorLeaves.html">Doctor Leaves</a>
+            <a href="/admin/doctorLeaves">Doctor Leaves</a>
         </div>
     </div>
 
@@ -476,126 +490,79 @@
     <!-- Main Content -->
     <div class="main-content">
         <div class="header">
-            <h2>Leave Request</h2>
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search here">
+            <h2>Appointments List</h2>
+        </div>
+        <form method="POST" action="/admin/appointmentList">
+            <div class="filters" style="display: flex; gap: 15px; align-items: center;">
+                 <input type="text" name="search_query" class="filter-input" placeholder="Search by doctor name">
+                <input type="date" id="date-from" class="filter-input" name="from_date" value="{{ current_date }}">
+                <input type="date" id="date-to" class="filter-input" name="from_date" value="{{ current_date }}">
+                <select class="filter-input">
+                    <option value="">Appointment Status</option>
+                    <option>Approved</option>
+                    <option>Pending</option>
+                    <option>Declined</option>
+                </select>
+                <button type="submit" class="search-button">Search</button>
             </div>
-        </div>
-
-        <!-- Filters -->
-        <div class="filters">
-            <input type="text" class="filter-input" placeholder="Employee Name">
-            <select class="filter-input">
-                <option value="">Select Leave Type</option>
-                <option>Medical Leave</option>
-                <option>Casual Leave</option>
-            </select>
-            <input type="date"  id="date-from" class="filter-input">
-            <input type="date"  id="date-to" class="filter-input">
-            <select class="filter-input">
-                <option value="">Leave Status</option>
-                <option>Approved</option>
-                <option>Pending</option>
-                <option>Declined</option>
-            </select>
-        </div>
-
+        </form>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <div class="action-buttons">
                 <button class="action-btn add-btn" onclick="redirectToPage()">
                     <i class="fas fa-plus"></i>
                     Add New
                 </button>
-                <button class="action-btn refresh-btn">
+                <button class="action-btn refresh-btn" onclick="window.location.href ='/admin/appointmentList'">
                     <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
-            <button class="search-button">Search</button>
         </div>
 
         <!-- Table -->
         <div class="table-container">
-            <div class="export-buttons">
-                <button class="export-btn"><i class="far fa-file-pdf" style="color: #FF5C75;"></i></button>
-                <button class="export-btn"><i class="far fa-file-excel" style="color: #2BC155;"></i></button>
-                <button class="export-btn"><i class="far fa-file-word" style="color: #3B4CB8;"></i></button>
-                <button class="export-btn"><i class="far fa-file" style="color: #8E44AD;"></i></button>
-            </div>
             <table>
                 <thead>
                 <tr>
                     <th><input type="hidden"></th>
-                    <th>Patient Name</th>
                     <th>Doctor Name</th>
+                    <th>Patient Name</th>
                     <th>Date</th>
                     <th>Time</th>
-                    <th>Reason</th>
                     <th>Status</th>
+                    <th>Reason</th>
+                    <th>Action</th>
                     <th></th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td><input type="checkbox" name="selectedRows" value="{{ doctor[0] }}"></td>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=2" class="avatar">
-                            <span class="employee-name">Andrea Lalema</span>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=2" class="avatar">
-                            <span class="employee-name">Andrea Lalema</span>
-                        </div>
-                    </td>
-                    <td>02.10.2022</td>
-                    <td>18:00</td>
-                    <td>Not Feeling well</td>
-                    <td><span class="status-badge status-approved">Approved</span></td>
-                    <td class="actions-cell"><i class="fas fa-ellipsis-v"></i></td>
-                </tr>
-                <tr>
-                    <td><input type="checkbox" name="selectedRows" value="{{ doctor[0] }}"></td>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=3" class="avatar">
-                            <span class="employee-name">Smith Bruklin</span>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=3" class="avatar">
-                            <span class="employee-name">Smith Bruklin</span>
-                        </div>
-                    </td>
-                    <td>04.10.2022</td>
-                    <td>8:00</td>
-                    <td>Going to Vacation</td>
-                    <td><span class="status-badge status-pending">Pending</span></td>
-                    <td class="actions-cell"><i class="fas fa-ellipsis-v"></i></td>
-                </tr>
-                <tr>
-                    <td><input type="checkbox" name="selectedRows" value="{{ doctor[0] }}"></td>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=4" class="avatar">
-                            <span class="employee-name">William Stephin</span>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=4" class="avatar">
-                            <span class="employee-name">William Stephin</span>
-                        </div>
-                    </td>
-                    <td>02.10.2022</td>
-                    <td>14:00</td>
-                    <td>Family Function</td>
-                    <td><span class="status-badge status-declined">Declined</span></td>
-                    <td class="actions-cell"><i class="fas fa-ellipsis-v"></i></td>
-                </tr>
+                {% if appointments %}
+                    {% for appointment in appointments %}
+                        <tr>
+                            <td><input type="checkbox" name="selectedRows" value="{{ appointment[10] }}"></td>
+                            <td>{{ appointment[0] }} {{ appointment[1] }} {{ appointment[2] }}</td>
+                            <td>{{ appointment[3] }} {{ appointment[4] }} {{ appointment[5] }}</td>
+                            <td>{{ appointment[6] }}</td>
+                            <td>{{ appointment[7] }}</td>
+                            <td>
+                                <span class="status-{{ appointment[8] | lower }}">{{ appointment[8] }}</span>
+                            </td>
+                            <td>{{ appointment[9] }}</td>
+                        <td>
+                                <button class="download-btn"
+                                        style="background-color: transparent; border-color: transparent"
+                                        onclick="editLeave('{{ appointment[10] }}')">
+                                    <img width="40" height="40"
+                                         src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
+                                         alt="pencil--v2"/>
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center;">No appointments found.</td>
+                    </tr>
+                {% endif %}
                 </tbody>
             </table>
 
@@ -614,7 +581,7 @@
         defaultDate: new Date(),
         static: true
     });
-        flatpickr("#date-to", {
+    flatpickr("#date-to", {
         dateFormat: "d-m-y",
         defaultDate: new Date(),
         static: true
@@ -638,7 +605,8 @@
             console.log('Exporting...');
         });
     });
-            function redirectToPage() {
+
+    function redirectToPage() {
         window.location.href = "editAppointnment.html";
     }
 </script>

@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pre Clinic - Leave Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
           rel="stylesheet">
+
     <style>
         * {
             margin: 0;
@@ -15,6 +18,7 @@
             box-sizing: border-box;
             font-family: 'Poppins', sans-serif;
         }
+
         :root {
             --primary-color: #4a90e2;
             --background-color: #F3F6F9;
@@ -387,7 +391,7 @@
         </div>
         <div class="menu-item">
             <i class="fas fa-th-large"></i>
-            <a href="adminDashboard.html">Dashboard</a>
+            <a href="/admin/adminDashboard">Dashboard</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-user-md"></i>
@@ -395,7 +399,7 @@
         </div>
         <div class="menu-item">
             <i class="fas fa-users"></i>
-            <a href="patientsList.html">Patients</a>
+            <a href="/admin/patientsList">Patients</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-calendar-alt"></i>
@@ -403,7 +407,7 @@
         </div>
         <div class="menu-item active">
             <i class="far fa-clock"></i>
-            <a href="scheduleList.html">Doctor Schedule</a>
+            <a href="/admin/scheduleList">Doctor Schedule</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-hospital"></i>
@@ -414,15 +418,19 @@
     <div class="main-content">
         <div class="header">
             <h2>Doctor Schedule</h2>
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search here">
-            </div>
         </div>
 
+        <form method="POST" action="/admin/scheduleList">
+            <div class="filters" style="display: flex; gap: 15px; align-items: center;">
+                <input type="text" name="search_query" class="filter-input" placeholder="Search by doctor name">
+                <input type="date" name="from_date" id="date" class="filter-input" value="{{ current_date }}">
+                <input type="date" name="to_date" id="date" class="filter-input" value="{{ current_date }}">
+                <button type="submit" class="search-button">Search</button>
+            </div>
+        </form>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <div class="action-buttons">
-                <button class="action-btn add-btn" onclick="redirectToPage()">
+                <button class="action-btn add-btn" onclick="window.location.href = '/admin/addSchedule'">
                     <i class="fas fa-plus"></i>
                     Add New
                 </button>
@@ -430,7 +438,6 @@
                     <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
-            <button class="search-button">Search</button>
         </div>
 
         <!-- Table -->
@@ -444,83 +451,35 @@
             <table>
                 <thead>
                 <tr>
-                    <th><input type="hidden"> </th>
+                    <th><input type="hidden"></th>
                     <th>Doctor Name</th>
-                    <th>Department</th>
-                    <th>Available days</th>
-                    <th>Available time</th>
-                    <th>Status</th>
+                    <th> Date</th>
+                    <th>From time</th>
+                    <th>To time</th>
                     <th>Edit</th>
                     <th></th>
                 </tr>
                 </thead>
+
                 <tbody>
-                <tr>
-                    <td><input type="checkbox" name="selectedRows" value="{{ doctor[0] }}"></td>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=2" class="avatar">
-                            <span class="employee-name">Andrea Lalema</span>
-                        </div>
-                    </td>
-                    <td>Medical Leave</td>
-                    <td>02.10.2022</td>
-                    <td>04.10.2022</td>
-                    <td><span class="status-badge status-approved">Approved</span></td>
-                    <td>
-                        <button class="download-btn"
-                                style="background-color: transparent; border-color: transparent"
-                                onclick="editDoctor.html">
-                            <img width="40" height="40"
-                                 src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
-                                 alt="pencil--v2"/>
-                        </button>
-                    </td>
-                </tr>
-                <tr>
-                    <td><input type="checkbox" name="selectedRows" value="{{ doctor[0] }}"></td>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=3" class="avatar">
-                            <span class="employee-name">Smith Bruklin</span>
-                        </div>
-                    </td>
-                    <td>Casual Leave</td>
-                    <td>04.10.2022</td>
-                    <td>06.10.2022</td>
-                    <td><span class="status-badge status-pending">Pending</span></td>
-                    <td>
-                        <button class="download-btn"
-                                style="background-color: transparent; border-color: transparent"
-                                onclick="editDoctor.html">
-                            <img width="40" height="40"
-                                 src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
-                                 alt="pencil--v2"/>
-                        </button>
-                    </td>
-                </tr>
-                <tr>
-                    <td><input type="checkbox" name="selectedRows" value="{{ doctor[0] }}"></td>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=4" class="avatar">
-                            <span class="employee-name">William Stephin</span>
-                        </div>
-                    </td>
-                    <td>Casual Leave</td>
-                    <td>02.10.2022</td>
-                    <td>04.10.2022</td>
-                    <td><span class="status-badge status-declined">Declined</span></td>
-                    <td>
-                        <button class="download-btn"
-                                style="background-color: transparent; border-color: transparent"
-                                onclick="editDoctor.html">
-                            <img width="40" height="40"
-                                 src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
-                                 alt="pencil--v2"/>
-                        </button>
-                    </td>
-                </tr>
+                {% for doctor in doctors %}
+                    <tr>
+                        <td><input type="checkbox" name="selectedRows" value="{{ doctor[6] }}"></td>
+                        <td>{{ doctor[0] }} {{ doctor[1] }} {{ doctor[2] }}</td>
+                        <td>{{ doctor[3] }}</td>
+                        <td>{{ doctor[4] }}</td>
+                        <td>{{ doctor[5] }}</td>
+                        <td>
+                            <button class="download-btn"
+                                    style="background-color: transparent; border-color: transparent"
+                                    onclick=redirectToPage('{{ doctor[6] }}')>
+                                <img width="40" height="40"
+                                     src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
+                                     alt="pencil--v2"/>
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
                 </tbody>
             </table>
 
@@ -534,6 +493,11 @@
 </div>
 
 <script>
+     flatpickr("#date", {
+        dateFormat: "d-m-y", // Устанавливаем формат даты
+        defaultDate: new Date(), // Устанавливаем текущую дату
+        static: true // Стационарное отображение календаря
+    });
     // Интерактивность меню
     document.querySelectorAll('.menu-item').forEach(item => {
         item.addEventListener('click', function () {
@@ -554,8 +518,8 @@
         });
     });
 
-            function redirectToPage() {
-        window.location.href = "editSchedule.html";
+    function redirectToPage(scheduleId) {
+        window.location.href = `/admin/addSchedule/${scheduleId}`;
     }
 </script>
 </body>

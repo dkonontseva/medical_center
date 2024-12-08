@@ -187,7 +187,6 @@
         .action-buttons {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
         }
 
         .action-btn {
@@ -350,6 +349,15 @@
             font-weight: 500;
         }
 
+        .patients-header input {
+            width: 650px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
         /* Responsive Design */
         @media (max-width: 1200px) {
             .filters {
@@ -382,7 +390,7 @@
         </div>
         <div class="menu-item">
             <i class="fas fa-th-large"></i>
-            <a href="adminDashboard.html">Dashboard</a>
+            <a href="/admin/adminDashboard">Dashboard</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-user-md"></i>
@@ -390,7 +398,7 @@
         </div>
         <div class="menu-item active">
             <i class="fas fa-users"></i>
-            <a href="patientsList.html">Patients</a>
+            <a href="/admin/patientsList">Patients</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-calendar-alt"></i>
@@ -398,7 +406,7 @@
         </div>
         <div class="menu-item">
             <i class="far fa-clock"></i>
-            <a href="scheduleList.html">Doctor Schedule</a>
+            <a href="/admin/scheduleList">Doctor Schedule</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-hospital"></i>
@@ -409,10 +417,6 @@
     <div class="main-content">
         <div class="header">
             <h2>Patient List</h2>
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search here">
-            </div>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -425,10 +429,15 @@
                     <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
-            <form action="/admin/patientsList" method="post">
-                <input type="text" id="searchInput" name="search_query" placeholder="Search medical card...">
-            </form>
         </div>
+        <form action="#" method="POST" style="width: 50%; margin-top: 30px; justify-content: center">
+            <div class="patients-header">
+                <form action="/admin/patientsList" method="post"
+                      style="width: 50%; margin-top: 30px; justify-content: center">
+                    <input type="text" id="searchInput" name="search_query" placeholder="Search medical card...">
+                </form>
+            </div>
+        </form>
         <div class="export-buttons">
             <button class="export-btn"><i class="far fa-file-pdf" style="color: #FF5C75;"></i></button>
             <button class="export-btn"><i class="far fa-file-excel" style="color: #2BC155;"></i></button>
@@ -443,88 +452,34 @@
                 <tr>
                     <th><input type="hidden"></th>
                     <th>Name</th>
-                    <th>Birt date</th>
-                    <th>gender</th>
+                    <th>Phone Number</th>
                     <th>Email</th>
-                    <th>Phone</th>
-                    <th>№ Medical card</th>
+                    <th>Gender</th>
                     <th>Address</th>
-                    <th>Action</th>
+                    <th>Actions</th>
                 </tr>
                 <tbody>
                 <tr>
-                    <td><input type="checkbox" name="selectedRows" value="{{ doctor[0] }}"></td>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=2" class="avatar">
-                            <span class="employee-name">Andrea Lalema</span>
-                        </div>
-                    </td>
-                    <td>14.11.2024</td>
-                    <td>Female</td>
-                    <td>test@mail.ru</td>
-                    <td>+375291234567</td>
-                    <td>0216098</td>
-                    <td>Minsk, Bedy4/1</td>
 
-                    <td>
-                        <button class="download-btn"
-                                style="background-color: transparent; border-color: transparent"
-                                onclick="editDoctor.html">
-                            <img width="40" height="40"
-                                 src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
-                                 alt="pencil--v2"/>
-                        </button>
-                    </td>
-                </tr>
-                <tr>
-                    <td><input type="checkbox" name="selectedRows" value="{{ doctor[0] }}"></td>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=3" class="avatar">
-                            <span class="employee-name">Smith Bruklin</span>
-                        </div>
-                    </td>
-                    <td>14.11.2024</td>
-                    <td>Female</td>
-                    <td>test@mail.ru</td>
-                    <td>+375291234567</td>
-                    <td>0216098</td>
-                    <td>Minsk, Bedy4/1</td>
-                    <td>
-                        <button class="download-btn"
-                                style="background-color: transparent; border-color: transparent"
-                                onclick="editDoctor.html">
-                            <img width="40" height="40"
-                                 src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
-                                 alt="pencil--v2"/>
-                        </button>
-                    </td>
-                </tr>
-                <tr>
-                    <td><input type="checkbox" name="selectedRows" value="{{ doctor[0] }}"></td>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=4" class="avatar">
-                            <span class="employee-name">William Stephin</span>
-                        </div>
-                    </td>
-                    <td>14.11.2024</td>
-                    <td>Female</td>
-                    <td>test@mail.ru</td>
-                    <td>+375291234567</td>
-                    <td>0216098</td>
-                    <td>Minsk, Bedy4/1</td>
-                    <td>
-                        <button class="download-btn"
-                                style="background-color: transparent; border-color: transparent"
-                                onclick="editDoctor.html">
-                            <img width="40" height="40"
-                                 src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
-                                 alt="pencil--v2"/>
-                        </button>
-                    </td>
-                </tr>
+                    {% for patient in patients %}
+                        <tr>
+                            <td><input type="checkbox" name="selectedRows" value="{{ patient[10] }}"></td>
+                            <td>{{ patient[0] }} {{ patient[1] }} {{ patient[2] }}</td>
+                            <td>{{ patient[3] }}</td>
+                            <td>{{ patient[11] }}</td>
+                            <td>{{ patient[4] }}</td>
+                            <td>{{ patient[5] }}, {{ patient[6] }}, {{ patient[7] }} {{ patient[8] }} {{ patient[9] }}</td>
+                            <td>
+                                <button class="download-btn"
+                                        style="background-color: transparent; border-color: transparent"
+                                        onclick="editDoctor.html">
+                                    <img width="40" height="40"
+                                         src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
+                                         alt="pencil--v2"/>
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
                 </tbody>
             </table>
 
@@ -536,7 +491,11 @@
         </div>
     </div>
 </div>
-
+<script>
+    function editPatient(medicalCardId) {
+        window.location.href = `/admin/editPatient/${medicalCardId}`;
+    }
+</script>
 <script>
     document.querySelectorAll('.menu-item').forEach(item => {
         item.addEventListener('click', function () {
