@@ -308,19 +308,17 @@
         </div>
     </div>
     <div class="nav-menu">
-       <a href='/patientDashboard'  class="nav-item active">Dashboard</a>
+        <a href='/patientDashboard' class="nav-item active">Dashboard</a>
         <a href='/myMedicalCard' class="nav-item">My medical card</a>
         <a href="/findAppointment" class="nav-item">Find appointment</a>
         <a href='/patientProfile' class="nav-item">Profile Settings</a>
     </div>
 </div>
 <div class="dashboard-container">
-
-    <header class="header animated">
+    <header class="header">
         <div class="profile-section">
             <div>
-                <h2>Richard Wilson</h2>
-                <p>Patient ID: P-0001</p>
+                <h2>{{ current_user[0] }} {{ current_user[1] }}</h2>
             </div>
         </div>
         <button class="theme-toggle" onclick="toggleTheme()">
@@ -331,53 +329,27 @@
     <div class="tabs">
         <div class="tab active" onclick="switchTab('statistics')">Statistics</div>
         <div class="tab" onclick="switchTab('appointments')">Recent Appointments</div>
-        <div class="tab" onclick="switchTab('history')">Appointments history</div>
+        <div class="tab" onclick="switchTab('history')">Appointments History</div>
     </div>
+
     <div id="statistics" class="tab-content">
-        <div class="quick-stats animated">
+        <div class="quick-stats">
             <div class="stat-card">
                 <i class="fas fa-calendar-check"></i>
                 <h3>Next Appointment</h3>
-                <p>Nov 15, 2023</p>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-pills"></i>
-                <h3>Active Prescriptions</h3>
-                <p>3</p>
+                <p>{{ next_appointment if next_appointment else "No upcoming appointments" }}</p>
             </div>
             <div class="stat-card">
                 <i class="fas fa-file-medical"></i>
                 <h3>Medical Records</h3>
-                <p>12</p>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-credit-card"></i>
-                <h3>Pending Bills</h3>
-                <p>$250</p>
-            </div>
-        </div>
-
-        <!-- Main Dashboard Grid -->
-        <div class="dashboard-grid">
-            <!-- Appointments Chart -->
-            <div class="card animated">
-                <h3>Appointment History</h3>
-                <div class="chart-container">
-                    <canvas id="appointmentChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Medical Status -->
-            <div class="card animated">
-                <h3>Health Status</h3>
-                <div class="chart-container">
-                    <canvas id="healthChart"></canvas>
-                </div>
+                <p>{{ medical_records }}</p>
             </div>
         </div>
     </div>
+
     <div id="appointments" class="tab-content" style="display: none;">
-        <div class="table-responsive animated">
+        <h3>Recent Appointments</h3>
+        <div class="table-responsive">
             <table class="table">
                 <thead>
                 <tr>
@@ -386,28 +358,26 @@
                     <th>Date</th>
                     <th>Time</th>
                     <th>Status</th>
-                    <th>Actions</th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td>Dr. Ruby Perrin</td>
-                    <td>Dental</td>
-                    <td>14 Nov 2023</td>
-                    <td>10:00 AM</td>
-                    <td><span class="status-badge status-approved">Confirmed</span></td>
-                    <td>
-                        <button class="btn btn-primary" onclick="redirectToNotesPage()">View</button>
-                        <button class="btn btn-danger">Delete</button>
-                    </td>
-                </tr>
-                <!-- Add more appointment rows as needed -->
+                {% for appointment in recent_appointments %}
+                    <tr>
+                        <td>Dr. {{ appointment[0] }} {{ appointment[1] }}</td>
+                        <td>{{ appointment[2] }}</td>
+                        <td>{{ appointment[3] }}</td>
+                        <td>{{ appointment[4] }}</td>
+                        <td><span class="status-badge">{{ appointment[5] }}</span></td>
+                    </tr>
+                {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+
     <div id="history" class="tab-content" style="display: none;">
-        <div class="table-responsive animated">
+        <h3>Appointments History</h3>
+        <div class="table-responsive">
             <table class="table">
                 <thead>
                 <tr>
@@ -416,26 +386,24 @@
                     <th>Date</th>
                     <th>Time</th>
                     <th>Status</th>
-                    <th>Actions</th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td>Dr. Ruby Perrin</td>
-                    <td>Dental</td>
-                    <td>14 Nov 2023</td>
-                    <td>10:00 AM</td>
-                    <td><span class="status-badge status-approved">Confirmed</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-primary">View</button>
-                    </td>
-                </tr>
-                <!-- Add more appointment rows as needed -->
+                {% for appointment in appointment_history %}
+                    <tr>
+                        <td>Dr. {{ appointment[0] }} {{ appointment[1] }}</td>
+                        <td>{{ appointment[2] }}</td>
+                        <td>{{ appointment[3] }}</td>
+                        <td>{{ appointment[4] }}</td>
+                        <td><span class="status-badge">{{ appointment[5] }}</span></td>
+                    </tr>
+                {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+
 <script>
     // Theme Toggle
     function toggleTheme() {

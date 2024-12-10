@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pre Clinic - Leave Management</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
           rel="stylesheet">
     <style>
         * {
@@ -124,6 +124,7 @@
             flex: 1;
             width: 1620px;
         }
+
         .header {
             display: flex;
             justify-content: space-between;
@@ -343,6 +344,27 @@
             cursor: pointer;
         }
 
+        .filters {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filter-input {
+            background: white;
+            border-radius: 8px;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            outline: none;
+            font-size: 14px;
+            color: #525252;
+        }
+
+        .filter-input::placeholder {
+            color: #8A92A6;
+        }
+
         /* Search button */
         .search-button {
             background: var(--primary-color);
@@ -414,23 +436,30 @@
     <div class="main-content">
         <div class="header">
             <h2>Doctor List</h2>
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search here">
-            </div>
         </div>
+
+        <form method="POST" action="/admin/doctorsList">
+            <div class="filters" style="display: flex; gap: 15px; align-items: center;">
+                <input type="text" name="search_query" class="filter-input" placeholder="Search by doctor name">
+                <select name="department_id" class="filter-input">
+                    <option value="">Select Department</option>
+                    {% for department in departments %}
+                        <option value="{{ department[0] }}">{{ department[1] }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="search-button">Search</button>
+            </div>
+        </form>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <div class="action-buttons">
-                <button class="action-btn add-btn" onclick="redirectToPage()">
-                    <i class="fas fa-plus"></i>
+                <button class="action-btn add-btn" onclick="window.location.href = '/admin/addDoctor'">
                     Add New
                 </button>
-                <button class="action-btn refresh-btn">
+                <button class="action-btn refresh-btn" onclick="window.location.href = '/admin/doctorsList'">
                     <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
-            <button class="search-button">Search</button>
         </div>
 
         <!-- Table -->
@@ -443,90 +472,43 @@
             </div>
             <table>
                 <thead>
-                    <tr>
-                        <th><input type="hidden"></th>
-                        <th>Name</th>
-                        <th>Department</th>
-                        <th>Specialization</th>
-                        <th>Degree</th>
-                        <th>Mobile</th>
-                        <th>Email</th>
-                        <th>Joining Date</th>
-                        <th>Actions</th>
-                    </tr>
+                <tr>
+                    <th><input type="hidden"></th>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Degree</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Joining Date</th>
+                    <th>Actions</th>
+                </tr>
                 <tbody>
-                <tr>
-                    <td><input type="checkbox" name="selectedRows" value="{{ doctor[0] }}"></td>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=2" class="avatar">
-                            <span class="employee-name">Andrea Lalema</span>
-                        </div>
-                    </td>
-                    <td>Cardiology</td>
-                    <td>Surgeon</td>
-                    <td>MOVV</td>
-                    <td>+375291234567</td>
-                    <td>test@mail.ru</td>
-                    <td>14.11.2024</td>
-                    <td>
-                        <button class="download-btn"
-                                style="background-color: transparent; border-color: transparent"
-                                onclick="editDoctor.html">
-                            <img width="40" height="40"
-                                 src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
-                                 alt="pencil--v2"/>
-                        </button>
-                    </td>
-                </tr>
-                <tr>
-                    <td><input type="checkbox" name="selectedRows" value="{{ doctor[0] }}"></td>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=3" class="avatar">
-                            <span class="employee-name">Smith Bruklin</span>
-                        </div>
-                    </td>
-                   <td>Cardiology</td>
-                    <td>Surgeon</td>
-                    <td>MOVV</td>
-                    <td>+375291234567</td>
-                    <td>test@mail.ru</td>
-                    <td>14.11.2024</td>
-                    <td>
-                        <button class="download-btn"
-                                style="background-color: transparent; border-color: transparent"
-                                onclick="editDoctor.html">
-                            <img width="40" height="40"
-                                 src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
-                                 alt="pencil--v2"/>
-                        </button>
-                    </td>
-                </tr>
-                <tr>
-                    <td><input type="checkbox" name="selectedRows" value="{{ doctor[0] }}"></td>
-                    <td>
-                        <div class="employee-cell">
-                            <img src="https://picsum.photos/38/38?random=4" class="avatar">
-                            <span class="employee-name">William Stephin</span>
-                        </div>
-                    </td>
-                   <td>Cardiology</td>
-                    <td>Surgeon</td>
-                    <td>MOVV</td>
-                    <td>+375291234567</td>
-                    <td>test@mail.ru</td>
-                    <td>14.11.2024</td>
-                    <td>
-                        <button class="download-btn"
-                                style="background-color: transparent; border-color: transparent"
-                                onclick="editDoctor.html">
-                            <img width="40" height="40"
-                                 src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
-                                 alt="pencil--v2"/>
-                        </button>
-                    </td>
-                </tr>
+                {% if doctors %}
+                    {% for doctor in doctors %}
+                        <tr>
+                            <td><input type="checkbox" name="selectedRows" value="{{ doctor[0] }}"></td>
+                            <td>{{ doctor[1] }} {{ doctor[2] }} {{ doctor[3] }}</td>
+                            <td>{{ doctor[4] }}</td>
+                            <td>{{ doctor[8] }}, {{ doctor[9] }}, {{ doctor[10] }}</td>
+                            <td>{{ doctor[5] }}</td>
+                            <td>{{ doctor[7] }}</td>
+                            <td>{{ doctor[6] }}</td>
+                            <td>
+                                <button class="download-btn"
+                                        style="background-color: transparent; border-color: transparent"
+                                        onclick=redirectToPage('{{ doctor[0] }}')>
+                                    <img width="40" height="40"
+                                         src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
+                                         alt="pencil--v2"/>
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="9" style="text-align: center;">No doctors found.</td>
+                    </tr>
+                {% endif %}
                 </tbody>
             </table>
 
@@ -559,8 +541,9 @@
             console.log('Exporting...');
         });
     });
-        function redirectToPage() {
-        window.location.href = "editDoctor.html";
+
+    function redirectToPage(doctorId) {
+        window.location.href = `/admin/addDoctor/${doctorId}`;
     }
 </script>
 </body>

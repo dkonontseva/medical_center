@@ -1,12 +1,10 @@
 import hashlib
 from datetime import datetime, timedelta
 from functools import wraps
-from idlelib import query
-
 import jwt
 import psycopg2
-from flask import Flask, request, render_template, redirect, jsonify
-
+from flask import Flask, request, render_template, redirect, jsonify, session
+from flask_login import LoginManager, UserMixin, login_user, login_required, current_user
 app = Flask(__name__)
 app.secret_key = '8sJqMOWkUCy2tW6Xiubx'
 salt = 'VsikgpaJavBH_v8OvEl'
@@ -73,6 +71,29 @@ def token_required(func):
     decorated.__name__ = func.__name__
     return decorated
 
+def login_required(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if 'user_id' not in session:
+            # flash("You must be logged in to access this page.", "error")
+            return redirect('/login')
+        return func(*args, **kwargs)
+    return wrapper
+
+
+def role_required(required_roles):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if 'user_role' not in session:
+                # flash("You must be logged in to access this page.", "error")
+                return redirect('/login')
+            if session['user_role'] not in required_roles:
+                # flash("You do not have permission to access this page.", "error")
+                return redirect('/login')
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -112,7 +133,7 @@ def registration():
         hashed_password = hashlib.sha256((password + salt).encode()).hexdigest()
 
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO users(login, password, role_id) VALUES(%s, %s, %s)", (email, hashed_password, 2), )
+        cursor.execute("INSERT INTO users(login, password, role_id) VALUES(%s, %s, %s)", (email, hashed_password, 1), )
         conn.commit()
         cursor.close()
         return redirect('/login')
@@ -128,7 +149,8 @@ def login():
 
         # Retrieve the stored hashed password and salt from the database
         cursor = conn.cursor()
-        cursor.execute("SELECT _id, password FROM users WHERE login = %s", (email,))
+        cursor.execute("SELECT users._id, users.password, role.role FROM users JOIN role "
+                       "ON users.role_id = role._id  WHERE login = %s", (email,))
         result = cursor.fetchone()
         cursor.close()
 
@@ -145,8 +167,17 @@ def login():
             }
             token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
             user.set_id(result[0])
-            # response = redirect('/patientDashboard')
-            response = redirect('/doctor/dashboard')
+
+            session['user_id'] = result[0]
+            session['user_email'] = result[1]
+            session['user_role'] = result[2]
+            if session['user_role'] == 'patient':
+                response = redirect('/patientDashboard')
+            if session['user_role'] == 'doctor':
+                response = redirect('/doctor/dashboard')
+            if session['user_role'] == 'admin':
+                response = redirect('/admin/adminDashboard')
+
             response.set_cookie('token', token)
             return response
         else:
@@ -155,12 +186,67 @@ def login():
         return render_template('auth.html')
 
 
-@app.route('/patientDashboard', methods=['GET', 'POST'])
+@app.route('/patientDashboard', methods=['GET'])
+@login_required
+@role_required(['patient'])
 def patient_dashboard():
-    return render_template('patients/dashboard.html')
+    cursor = conn.cursor()
+    patient_id = session['user_id']
+
+    cursor.execute("SELECT first_name, last_name FROM patients WHERE user_id = %s", (patient_id,))
+    current_user = cursor.fetchone()
+    # Получение статистики
+    cursor.execute("""
+        SELECT MIN(date) AS next_appointment
+        FROM talons
+        WHERE patient_id = %s AND date >= CURRENT_DATE
+    """, (patient_id,))
+    next_appointment = cursor.fetchone()[0]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS medical_records
+        FROM talons 
+        WHERE patient_id = %s
+    """, (patient_id,))
+    medical_records = cursor.fetchone()[0]
+    cursor.execute("""
+        SELECT doctors.first_name, doctors.last_name, departments.department, talons.date, talons.time, talons.status 
+        FROM talons
+        JOIN doctors ON talons.doctor_id = doctors._id
+        JOIN departments ON doctors.department_id = departments._id
+        WHERE patient_id = %s AND date >= CURRENT_DATE
+        ORDER BY date, time
+        LIMIT 5
+    """, (patient_id,))
+    recent_appointments = cursor.fetchall()
+
+    # История записей
+    cursor.execute("""
+        SELECT doctors.first_name, doctors.last_name, departments.department, talons.date, talons.time, talons.status
+        FROM talons
+        JOIN doctors ON talons.doctor_id = doctors._id
+        JOIN departments ON doctors.department_id = departments._id
+        WHERE patient_id = %s AND date < CURRENT_DATE
+        ORDER BY date DESC, time DESC
+    """, (patient_id,))
+    appointment_history = cursor.fetchall()
+
+    cursor.close()
+
+    return render_template(
+        'patients/dashboard.html',
+        next_appointment=next_appointment,
+        medical_records=medical_records,
+        recent_appointments=recent_appointments,
+        appointment_history=appointment_history,
+        current_user=current_user
+    )
+
 
 
 @app.route('/patientProfile', methods=['GET', 'POST'])
+@login_required
+@role_required(['patient'])
 def patient_profile():
     cursor = conn.cursor()
 
@@ -187,8 +273,9 @@ def patient_profile():
                     phone_number = %s, gender = %s, b_day = %s
                 WHERE user_id = %s
             """, (
-        str(first_name), str(last_name), str(second_name), str(email), str(phone_number), str(gender), date_of_birth,
-        str(user.get_id())))
+            str(first_name), str(last_name), str(second_name), str(email), str(phone_number), str(gender),
+            date_of_birth,
+            str(user.get_id())))
         conn.commit()
 
         cursor.close()
@@ -196,6 +283,8 @@ def patient_profile():
 
 
 @app.route('/patientProfileAddress', methods=['POST'])
+@login_required
+@role_required(['patient'])
 def patient_profile_address():
     cursor = conn.cursor()
     if request.method == 'POST':
@@ -218,6 +307,8 @@ def patient_profile_address():
 
 
 @app.route('/patientChangePassword', methods=['POST'])
+@login_required
+@role_required(['patient'])
 def patient_change_password():
     if request.method == 'POST':
         old_password = request.form.get('old-password')
@@ -232,10 +323,10 @@ def patient_change_password():
         decrypted_password = hashlib.sha256((old_password + salt).encode()).hexdigest()
 
         if decrypted_password != stored_password:
-            return redirect('patientProfile')
+            return redirect('/patientProfile')
 
         if new_password != repeat_password:
-            return redirect('patientProfile')
+            return redirect('/patientProfile')
 
         encrypted_new = hashlib.sha256((new_password + salt).encode()).hexdigest()
 
@@ -250,6 +341,8 @@ def patient_change_password():
 
 
 @app.route('/myMedicalCard', methods=['GET', 'POST'])
+@login_required
+@role_required(['patient'])
 def myMedicalCard():
     if request.method == 'POST':
         search_query = request.form.get('search_query', '').strip()
@@ -263,6 +356,7 @@ def myMedicalCard():
                 WHERE patients.user_id = %s AND (doctors.first_name ILIKE %s OR doctors.second_name ILIKE %s);
             """, (user.get_id(), search_query, search_query))
         search = cursor.fetchall()
+        cursor.close()
         print(search)
         return render_template('patients/medicalCard.html', medicalCard=search)
 
@@ -271,13 +365,15 @@ def myMedicalCard():
         cursor.execute("""SELECT doctors.first_name, doctors.second_name, medical_card.date, medical_card._id FROM medical_card 
                                 join patients on medical_card.patient_id=patients._id 
                                 join doctors on medical_card.doctor_id = doctors._id
-                                where user_id=%s""", (str(user.get_id())))
+                                where patients.user_id=%s""", (str(user.get_id())))
         result = cursor.fetchall()
         cursor.close()
         return render_template('patients/medicalCard.html', medicalCard=result)
 
 
 @app.route('/medicalRecord/<int:record_id>', methods=['GET'])
+@login_required
+@role_required(['patient'])
 def medical_record(record_id):
     cursor = conn.cursor()
     cursor.execute("""
@@ -295,6 +391,8 @@ def medical_record(record_id):
 
 
 @app.route('/searchMedNote', methods=['GET', 'POST'])
+@login_required
+@role_required(['patient'])
 def searchMedNote():
     search_query = request.form.get('search_query')
     if (request.method == 'POST'):
@@ -303,7 +401,8 @@ def searchMedNote():
                                 FROM medical_card
                                 JOIN patients ON medical_card.patient_id = patients._id
                                 JOIN doctors ON medical_card.doctor_id = doctors._id
-                                WHERE patients.user_id = %s AND (doctors.first_name ILIKE %s OR doctors.second_name ILIKE %s);
+                                WHERE patients.user_id = %s AND (doctors.first_name ILIKE %s OR doctors.second_name ILIKE %s 
+                                OR doctors.last_name ILIKE %s);
                                 """,
                              (str(user.get_id()), search_query, search_query)))
         search = cursor.fetchall()
@@ -312,78 +411,84 @@ def searchMedNote():
 
 
 @app.route('/findAppointment', methods=['GET'])
-def findAppointment():
+@login_required
+@role_required(['patient'])
+def find_appointment():
+    cursor = conn.cursor()
+    date = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+    cursor.execute("SELECT _id, department FROM departments ORDER BY department ASC")
+    departments = cursor.fetchall()
+    department = request.args.get('department', '')
+    doctor_search = request.args.get('search', '')
+
+    query = """
+        SELECT doctors._id, doctors.first_name, doctors.last_name, doctors.phone_number, departments.department
+        FROM doctors
+        JOIN departments ON doctors.department_id = departments._id
+        WHERE NOT EXISTS (
+            SELECT 1 FROM talons 
+            WHERE talons.doctor_id = doctors._id AND talons.date = %s
+        )
+    """
+    params = [date]
+
+    if department:
+        query += " AND departments.department ILIKE %s"
+        params.append(f"%{department}%")
+
+    if doctor_search:
+        query += """
+            AND (doctors.first_name ILIKE %s 
+            OR doctors.last_name ILIKE %s 
+            OR doctors.second_name ILIKE %s)
+        """
+        params.extend([f"%{doctor_search}%"] * 3)
+
+    cursor.execute(query, params)
+    doctors = cursor.fetchall()
+    cursor.close()
+
+    return render_template('patients/findAppointment.html', doctor_list=doctors, departments=departments)
+
+
+@app.route('/findAppointment/slots', methods=['GET'])
+@login_required
+@role_required(['patient'])
+def get_available_slots():
+    doctor_id = request.args.get('doctor_id')
+    date = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
     cursor = conn.cursor()
 
-    doctor_id = request.args.get('doctor_id')
+    cursor.execute("""
+        SELECT time FROM schedule
+        WHERE doctor_id = %s AND date = %s AND NOT EXISTS (
+            SELECT 1 FROM talons
+            WHERE talons.doctor_id = schedule.doctor_id 
+            AND talons.date = schedule.date 
+            AND talons.time = schedule.time
+        )
+    """, (doctor_id, date))
 
-    if doctor_id:  # Если запрос на получение свободных слотов
-        cursor.execute("""
-            SELECT s.date, s.start_time, s.end_time
-            FROM schedule s
-            WHERE s.doctor_id = %s AND s.date >= CURRENT_DATE
-            ORDER BY s.date, s.start_time
-        """, (doctor_id,))
-        schedule = cursor.fetchall()
+    slots = cursor.fetchall()
+    cursor.close()
 
-        free_slots = []
-        for row in schedule:
-            date, start_time, end_time = row
-            start_datetime = datetime.combine(date, start_time)
-            end_datetime = datetime.combine(date, end_time)
-
-            all_slots = []
-            while start_datetime < end_datetime:
-                all_slots.append(start_datetime.time())
-                start_datetime += timedelta(minutes=30)
-
-            # Получение занятых слотов
-            cursor.execute("""
-                SELECT time
-                FROM talons
-                WHERE doctor_id = %s AND date = %s
-            """, (doctor_id, date))
-            occupied_slots = {slot[0] for slot in cursor.fetchall()}
-
-            free_slots.extend([
-                {"date": date.strftime("%Y-%m-%d"), "time": slot.strftime("%H:%M")}
-                for slot in all_slots if slot not in occupied_slots
-            ])
-
-        cursor.close()
-        return jsonify({"available_slots": free_slots})
-
-    else:  # Запрос списка врачей
-        cursor.execute("""
-            SELECT DISTINCT d._id, d.first_name, d.last_name, d.second_name, d.phone_number
-            FROM doctors d
-            ORDER BY d.last_name, d.first_name
-        """)
-        doctors = cursor.fetchall()
-        cursor.close()
-
-        doctors_list = [
-            {"id": doc[0], "first_name": doc[1], "last_name": doc[2], "second_name": doc[3], "phone_number": doc[4]}
-            for doc in doctors
-        ]
-        return render_template('patients/findAppointment.html', doctors=doctors_list)
+    return render_template('patients/findAppointment.html', available_slots=slots)
 
 
 @app.route('/bookAppointment', methods=['POST'])
-def bookAppointment():
+@login_required
+@role_required(['patient'])
+def book_appointment():
     doctor_id = request.form.get('doctor_id')
-    slot_date = request.form.get('date')
-    slot_time = request.form.get('time')
-    patient_id = user.get_id()
-
-    if not doctor_id or not slot_date or not slot_time:
-        return jsonify({"error": "Doctor ID, date, and time are required"}), 400
+    date = request.form.get('date')
+    time = request.form.get('time')
+    patient_id = request.form.get('patient_id')
 
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO talons (patient_id, doctor_id, date, time)
-        VALUES (%s, %s, %s, %s)
-    """, (patient_id, doctor_id, slot_date, slot_time))
+        INSERT INTO talons (doctor_id, patient_id, date, time, status)
+        VALUES (%s, %s, %s, %s, 'pending')
+    """, (doctor_id, patient_id, date, time))
     conn.commit()
     cursor.close()
 
@@ -391,6 +496,8 @@ def bookAppointment():
 
 
 @app.route('/doctor/dashboard', methods=['GET', 'POST'])
+@login_required
+@role_required(['doctor'])
 def doctor_dashboard():
     cursor = conn.cursor()
     cursor.execute(""" SELECT _id FROM doctors WHERE user_id = %s""", str(user.get_id()))
@@ -441,6 +548,8 @@ def doctor_dashboard():
 
 
 @app.route('/doctor/add_note/<int:patient_id>', methods=['GET', 'POST'])
+@login_required
+@role_required(['doctor'])
 def add_note(patient_id):
     cursor = conn.cursor()
     # Получение данных врача
@@ -474,6 +583,8 @@ def add_note(patient_id):
 
 
 @app.route('/doctor/patientsCards', methods=['GET', 'POST'])
+@login_required
+@role_required(['doctor'])
 def patientsCards():
     cursor = conn.cursor()
     if request.method == 'POST':
@@ -501,6 +612,8 @@ def patientsCards():
 
 
 @app.route('/doctor/medicalRecord/<int:record_id>', methods=['GET'])
+@login_required
+@role_required(['doctor'])
 def medical_record_doctor(record_id):
     cursor = conn.cursor()
     cursor.execute("""
@@ -518,17 +631,25 @@ def medical_record_doctor(record_id):
 
 
 @app.route('/doctor/profile', methods=['GET', 'POST'])
+@login_required
+@role_required(['doctor'])
 def doctor_profile():
     cursor = conn.cursor()
 
     if request.method == 'GET':
-        cursor.execute("SELECT last_name, first_name, second_name, phone_number, login, gender, country, "
-                       "city, street, house, flat, addresses._id  from doctors join addresses on doctors.address_id = addresses._id "
-                       "join users on doctors.user_id=users._id "
-                       "where user_id=%s", (str(user.get_id())))
+        cursor.execute("""
+            SELECT doctors._id, last_name, first_name, second_name, phone_number, gender, 
+                   birthday, addresses.country, addresses.city, addresses.street, addresses.house, 
+                   addresses.flat, addresses._id, users.login, university, faculty, specialization, education_id  
+            FROM doctors
+            JOIN addresses ON addresses._id = doctors.address_id
+            JOIN users ON users._id = doctors.user_id 
+            JOIN education ON education._id = doctors.education_id
+            WHERE users._id = %s
+        """, (str(user.get_id()),))
         result = cursor.fetchone()
-        print(result)
-        return render_template('patients/profile.html', user_profile=result)
+        cursor.close()
+        return render_template('doctors/profile.html', user_profile=result)
 
     elif request.method == 'POST':
         first_name = request.form.get('first_name')
@@ -538,204 +659,351 @@ def doctor_profile():
         phone_number = request.form.get('phone_number')
         gender = request.form.get('gender')
 
+        # Обновление основной информации
         cursor.execute("""
-                UPDATE doctors
-                SET first_name = %s, last_name = %s, second_name = %s, phone_number = %s, gender = %s
-                WHERE user_id = %s
-            """, (str(first_name), str(last_name), str(second_name), str(email), str(phone_number), str(gender),
-                  str(user.get_id())))
+            UPDATE doctors
+            SET first_name = %s, last_name = %s, second_name = %s, phone_number = %s, gender = %s
+            WHERE user_id = %s
+        """, (first_name, last_name, second_name, phone_number, gender, str(user.get_id())))
         conn.commit()
 
+        # Обновление email в таблице users
         cursor.execute("""
-                           UPDATE users
-                           SET login = %s
-                           WHERE user_id = %s""", (str(user.get_id())))
+            UPDATE users
+            SET login = %s
+            WHERE _id = %s
+        """, (email, str(user.get_id())))
         conn.commit()
 
         cursor.close()
         return redirect('/doctor/profile')
 
 
-@app.route('/addpatient', methods=['GET', 'POST'])
-# @token_required
-def addpatient():
-    if request.method == 'POST':
-        name = request.form['fio']
-        surname = request.form['surname']
-        secondname = request.form['secondname']
-        email = request.form['email']
-        phone = request.form['phone']
-        address = request.form['address']
-        dob = request.form['dob']
-        gender = request.form['gender']
+@app.route('/doctor/profile/address', methods=['POST'])
+@login_required
+@role_required(['doctor'])
+def doctor_profile_address():
+    cursor = conn.cursor()
 
-        cursor = conn.cursor()
-        query = "INSERT INTO patients(first_name, last_name, second_name, phone_number, email, b_day) VALUES(%s,%s, %s, %s, %s, %s)"
-        cursor.execute(query, (name, surname, secondname, phone, email, dob), )
-        print(query)
-        conn.commit()
-        cursor.close()
-        return render_template('patients/dashboard.html')
+    address_id = request.form.get('address_id')
+    country = request.form.get('country')
+    city = request.form.get('city')
+    street = request.form.get('street')
+    house = request.form.get('house')
+    flat = request.form.get('flat')
+
+    cursor.execute("""
+        UPDATE addresses
+        SET country = %s, city = %s, street = %s, house = %s, flat = %s
+        WHERE _id = %s
+    """, (country, city, street, house, flat, address_id))
+    conn.commit()
+    cursor.close()
+    return redirect('/doctor/profile')
+
+@app.route('/doctor/profile/education', methods=['POST'])
+@login_required
+@role_required(['doctor'])
+def doctor_profile_education():
+    cursor = conn.cursor()
+
+    education_id = request.form.get('education_id')
+    university = request.form.get('university')
+    faculty = request.form.get('faculty')
+    specialization = request.form.get('specialization')
+
+    cursor.execute("""
+        UPDATE education
+        SET university = %s, faculty = %s, specialization = %s
+        WHERE _id = %s
+    """, (university, faculty, specialization, education_id))
+    conn.commit()
+    cursor.close()
+    return redirect('/doctor/profile')
+
+@app.route('/doctor/profile/password', methods=['POST'])
+@login_required
+@role_required(['doctor'])
+def doctor_change_password():
+    cursor = conn.cursor()
+
+    old_password = request.form.get('old-password')
+    new_password = request.form.get('new-password')
+    repeat_password = request.form.get('repeat-password')
+
+    cursor.execute("SELECT password FROM users WHERE _id = %s", str(user.get_id()))
+    result = cursor.fetchone()
+
+    decrypted_password = hashlib.sha256((old_password + salt).encode()).hexdigest()
+
+    if result and result[0] == decrypted_password:
+        if new_password == repeat_password:
+            encrypted_new = hashlib.sha256((new_password + salt).encode()).hexdigest()
+
+            cursor.execute("""
+                                        UPDATE users
+                                        SET password = %s WHERE _id=%s
+                                    """, (str(encrypted_new), str(user.get_id())))
+            conn.commit()
+            cursor.close()
+            return redirect('/doctor/profile')
+        else:
+            cursor.close()
+            return render_template('doctors/profile.html', error_message="Passwords do not match!")
     else:
-        return render_template('addPatient.html')
+        cursor.close()
+        return render_template('doctors/profile.html', error_message="Old password is incorrect!")
+
 
 
 @app.route('/admin/adminDashboard', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
 def admin_dashboard():
     return render_template('adminDashboard.html')
 
 
-@app.route('/admin/patientsList', methods=['GET', 'POST'])
-def admin_patientsList():
-    cursor = conn.cursor()
-    if (request.method == 'GET'):
-        cursor.execute("SELECT patients.last_name, patients.first_name, patients.second_name, patients.phone_number, "
-                       "patients.gender, country, city, street, house, flat, patients._id, users.login  "
-                       "FROM patients JOIN addresses on addresses._id=patients.address_id "
-                       "JOIN users on users._id=patients.user_id "
-                       "ORDER BY patients.last_name ASC")
-        result = cursor.fetchall()
-        cursor.close()
-        return render_template('patientsList.html', patients=result)
-    if (request.method == 'POST'):
-        search_query = request.form.get('search_query', '').strip()
-        search_query = f"%{search_query}%"
-        cursor.execute("""
-                        SELECT patients.last_name, patients.first_name, patients.second_name, patients.phone_number, 
-                       patients.gender, country, city, street, house, flat, patients._id, users.login  
-                       FROM patients JOIN addresses on addresses._id=patients.address_id 
-                       JOIN users on users._id=patients.user_id 
-                       WHERE patients.first_name ILIKE %s OR patients.second_name ILIKE %s OR patients.last_name ILIKE %s 
-                       ORDER BY patients.last_name ASC;""", (search_query, search_query, search_query))
-        search = cursor.fetchall()
-        print(search)
-        return render_template('patientsList.html', patients=search)
-
-
-@app.route('/admin/doctorsList', methods=['GET', 'POST'])
-def admin_doctorsList():
-    cursor = conn.cursor()
-    if (request.method == 'GET'):
-        cursor.execute("SELECT patients.first_name, patients.last_name, patients.second_name, patients.phone_number, "
-                       "patients.gender,medical_card._id, country, city, street, house, flat "
-                       "FROM patients JOIN addresses on addresses._id=atients.address_id "
-                       "JOIN medical_card on medical_card.patient_id = patients._id "
-                       "ORDER BY patients.last_name ASC")
-        result = cursor.fetchall()
-        cursor.close()
-        return render_template('doctorsList.html', patients=result)
-    if (request.method == 'POST'):
-        search_query = request.form.get('search_query', '').strip()
-        search_query = f"%{search_query}%"
-        cursor.execute("""
-                            SELECT doctors.first_name, doctors.last_name, doctors.second_name,  
-                           FROM patients JOIN addresses on addresses._id=patients.address_id 
-                           JOIN medical_card on medical_card.patient_id = patients._id 
-                           WHERE patients.first_name ILIKE %s OR patients.second_name ILIKE %s OR patients.last_name ILIKE %s 
-                           ORDER BY patients.last_name ASC;""", (search_query, search_query, search_query))
-        search = cursor.fetchall()
-        print(search)
-        return render_template('doctorsList.html', medicalCard=search)
-
+# @app.route('/admin/scheduleList', methods=['GET', 'POST'])
+# @login_required
+# @role_required(['admin'])
+# def admin_scheduleList():
+#     cursor = conn.cursor()
+#     current_date = datetime.now().strftime('%Y-%m-%d')
+#     cursor.execute("SELECT _id, department FROM departments ORDER BY department ASC")
+#     departments = cursor.fetchall()
+#     if (request.method == 'GET'):
+#         cursor.execute("SELECT doctors.last_name, doctors.first_name, doctors.second_name, schedule.date, "
+#                        "schedule.start_time, schedule.end_time, schedule._id FROM doctors JOIN schedule on doctors._id=schedule.doctor_id "
+#                        "ORDER BY doctors.last_name ASC")
+#         result = cursor.fetchall()
+#         cursor.close()
+#         return render_template('scheduleList.html', doctors=result, current_date=current_date, departments=departments)
+#     if request.method == 'POST':
+#         search_query = request.form.get('search_query', '').strip()
+#         from_date = request.form.get('from_date', current_date)
+#         to_date = request.form.get('to_date', current_date)
+#         department_id = request.form.get('department_id', '').strip()
+#         query = """
+#             SELECT doctors.last_name, doctors.first_name, doctors.second_name, schedule.date,
+#                    schedule.start_time, schedule.end_time, schedule._id
+#             FROM doctors JOIN schedule ON doctors._id = schedule.doctor_id """
+#         params = []
+#         if search_query:
+#             query += """
+#                         AND (doctors.first_name ILIKE %s OR doctors.second_name ILIKE %s OR doctors.last_name ILIKE %s)
+#                     """
+#             params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
+#         query += """
+#                     AND  schedule.date>= %s
+#                     AND schedule.date <= %s
+#                 """
+#         params.extend([from_date, to_date])
+#         if department_id:
+#             query += " AND department_id = %s"
+#             params.append(department_id)
+#         query += " ORDER BY doctors.last_name ASC"
+#         cursor.execute(query, params)
+#         result = cursor.fetchall()
+#         cursor.close()
+#         return render_template('scheduleList.html', doctors=result, current_date=current_date, departments=departments)
+#
 @app.route('/admin/scheduleList', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
 def admin_scheduleList():
     cursor = conn.cursor()
     current_date = datetime.now().strftime('%Y-%m-%d')
-    if (request.method == 'GET'):
-        cursor.execute("SELECT doctors.last_name, doctors.first_name, doctors.second_name, schedule.date, "
-                       "schedule.start_time, schedule.end_time, schedule._id FROM doctors JOIN schedule on doctors._id=schedule.doctor_id "
-                       "ORDER BY doctors.last_name ASC")
+    cursor.execute("SELECT _id, department FROM departments ORDER BY department ASC")
+    departments = cursor.fetchall()
+
+    if request.method == 'GET':
+        query = """
+            SELECT 
+                doctors.last_name, doctors.first_name, doctors.second_name, departments.department, 
+                shifts.start_time, shifts.end_time, schedules.day_of_week, schedules._id
+            FROM schedules
+            JOIN doctors ON schedules.doctor_id = doctors._id
+            JOIN shifts ON schedules.shift_id = shifts._id
+            JOIN departments ON doctors.department_id = departments._id
+            ORDER BY doctors.last_name ASC, schedules.day_of_week ASC
+        """
+        cursor.execute(query)
         result = cursor.fetchall()
         cursor.close()
-        return render_template('scheduleList.html', doctors=result, current_date=current_date)
+        return render_template('scheduleList.html', doctors=result, current_date=current_date, departments=departments)
+
     if request.method == 'POST':
         search_query = request.form.get('search_query', '').strip()
-        from_date = request.form.get('from_date', current_date)
-        to_date = request.form.get('to_date', current_date)
-        query="""
-            SELECT doctors.last_name, doctors.first_name, doctors.second_name, schedule.date, 
-                   schedule.start_time, schedule.end_time, schedule._id  
-            FROM doctors JOIN schedule ON doctors._id = schedule.doctor_id """
+        department_id = request.form.get('department_id', '').strip()
+        day_of_week = request.form.get('day_of_week', '').strip()
+        query = """
+            SELECT 
+                doctors.last_name, doctors.first_name, doctors.second_name, departments.department, 
+                shifts.start_time, shifts.end_time, schedules.day_of_week, schedules._id
+            FROM schedules
+            JOIN doctors ON schedules.doctor_id = doctors._id
+            JOIN shifts ON schedules.shift_id = shifts._id
+            JOIN departments ON doctors.department_id = departments._id
+            WHERE TRUE
+        """
         params = []
+
         if search_query:
             query += """
-                        AND (doctors.first_name ILIKE %s OR doctors.second_name ILIKE %s OR doctors.last_name ILIKE %s)
-                    """
-            params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
-        query += """
-                    AND  schedule.date>= %s
-                    AND schedule.date <= %s
-                """
-        params.extend([from_date, to_date])
-        query += " ORDER BY doctors.last_name ASC"
+                AND (doctors.first_name ILIKE %s OR doctors.second_name ILIKE %s OR doctors.last_name ILIKE %s)
+            """
+            params.extend([f"%{search_query}%"] * 3)
+
+        if department_id:
+            query += " AND doctors.department_id = %s"
+            params.append(department_id)
+
+        if day_of_week:
+            query += " AND schedules.day_of_week = %s "
+            params.append(day_of_week)
+
+        query += " ORDER BY doctors.last_name ASC, schedules.day_of_week ASC"
         cursor.execute(query, params)
         result = cursor.fetchall()
         cursor.close()
-        return render_template('scheduleList.html', doctors=result, current_date=current_date)
+        return render_template('scheduleList.html', doctors=result, current_date=current_date, departments=departments)
+
+# @app.route('/admin/addSchedule', methods=['GET', 'POST'])
+# @app.route('/admin/addSchedule/<int:schedule_id>', methods=['GET', 'POST'])
+# @login_required
+# @role_required(['admin'])
+# def add_schedule(schedule_id=None):
+#     cursor = conn.cursor()
+#     if request.method == 'GET':
+#         if schedule_id:
+#             cursor.execute("""
+#                             SELECT doctors.last_name, doctors.first_name, doctors.second_name, schedule.date,
+#                             schedule.start_time, schedule.end_time, schedule._id
+#                             FROM doctors JOIN schedule on doctors._id=schedule.doctor_id
+#                             WHERE schedule._id = %s
+#                         """, (schedule_id,))
+#             leave_data = cursor.fetchone()
+#             print(leave_data)
+#             cursor.close()
+#
+#             if leave_data:
+#                 return render_template('editSchedule.html', leave=leave_data, schedule_id=schedule_id)
+#             else:
+#                 return "Leave not found", 404
+#         else:
+#             empty_leave_data = {
+#                 'available-days': '',
+#                 'from_time': '',
+#                 'to_time': '',
+#                 'last_name': '',
+#                 'first_name': '',
+#                 'second_name': ''
+#             }
+#             return render_template('editSchedule.html', leave=empty_leave_data)
+#
+#     if request.method == 'POST':
+#         doctor_name = request.form.get('doctor_name', '').strip()
+#         available_days = request.form.get('available-days', '')
+#         from_time = request.form.get('from_date')
+#         to_time = request.form.get('to_date')
+#
+#         if schedule_id:
+#             cursor.execute("""
+#                         UPDATE schedule
+#                         SET date = %s, start_time = %s, end_time = %s
+#                         WHERE _id = %s
+#                     """, (available_days, from_time, to_time, schedule_id))
+#         else:
+#             names = doctor_name.split()
+#             last_name, first_name, second_name = names
+#
+#             cursor.execute("""
+#                         SELECT doctors._id FROM doctors WHERE doctors.last_name = %s AND doctors.first_name = %s AND doctors.second_name = %s
+#                     """, (last_name, first_name, second_name))
+#
+#             doctor_id = cursor.fetchone()
+#             print(doctor_id)
+#             cursor.execute("""
+#                         INSERT INTO schedule (doctor_id, date, start_time, end_time)
+#                         VALUES (%s, %s, %s, %s)
+#                     """, (doctor_id, available_days, from_time, to_time))
+#
+#         conn.commit()
+#         cursor.close()
+#
+#         return redirect('/admin/scheduleList')
 @app.route('/admin/addSchedule', methods=['GET', 'POST'])
 @app.route('/admin/addSchedule/<int:schedule_id>', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
 def add_schedule(schedule_id=None):
     cursor = conn.cursor()
     if request.method == 'GET':
         if schedule_id:
             cursor.execute("""
-                            SELECT doctors.last_name, doctors.first_name, doctors.second_name, schedule.date, 
-                            schedule.start_time, schedule.end_time, schedule._id 
-                            FROM doctors JOIN schedule on doctors._id=schedule.doctor_id 
-                            WHERE schedule._id = %s
-                        """, (schedule_id,))
-            leave_data = cursor.fetchone()
-            print(leave_data)
+                SELECT 
+                doctors.last_name, doctors.first_name, doctors.second_name, departments.department, 
+                shifts.start_time, shifts.end_time, schedules.day_of_week, schedules._id
+                FROM schedules
+                JOIN doctors ON schedules.doctor_id = doctors._id
+                JOIN shifts ON schedules.shift_id = shifts._id
+                JOIN departments ON doctors.department_id = departments._id
+                WHERE schedules._id = %s
+            """, (schedule_id,))
+            schedule_data = cursor.fetchone()
+            cursor.execute("SELECT _id, start_time, end_time FROM shifts ORDER BY start_time ASC")
+            shifts = cursor.fetchall()
             cursor.close()
 
-            if leave_data:
-                return render_template('editSchedule.html', leave=leave_data, schedule_id=schedule_id)
+            if schedule_data:
+                return render_template('editSchedule.html', schedule=schedule_data, shifts=shifts, schedule_id=schedule_id)
             else:
-                return "Leave not found", 404
+                return "Schedule not found", 404
         else:
-            empty_leave_data = {
-                'available-days': '',
-                'from_time': '',
-                'to_time': '',
-                'last_name': '',
-                'first_name': '',
-                'second_name': ''
-            }
-            return render_template('editSchedule.html', leave=empty_leave_data)
+            cursor.execute("SELECT _id, start_time, end_time FROM shifts ORDER BY start_time ASC")
+            shifts = cursor.fetchall()
+            cursor.close()
+            return render_template('editSchedule.html', shifts=shifts, schedule=None)
 
     if request.method == 'POST':
         doctor_name = request.form.get('doctor_name', '').strip()
-        available_days = request.form.get('available-days', '')
-        from_time = request.form.get('from_date')
-        to_time = request.form.get('to_date')
+        shift_id = request.form.get('shift_id')
+        day_of_week = request.form.get('day_of_week')
 
         if schedule_id:
             cursor.execute("""
-                        UPDATE schedule
-                        SET date = %s, start_time = %s, end_time = %s
-                        WHERE _id = %s
-                    """, (available_days, from_time, to_time, schedule_id))
+                UPDATE schedules
+                SET shift_id = %s, day_of_week = %s
+                WHERE _id = %s
+            """, (shift_id, day_of_week, schedule_id))
         else:
             names = doctor_name.split()
             last_name, first_name, second_name = names
 
             cursor.execute("""
-                        SELECT doctors._id FROM doctors WHERE doctors.last_name = %s AND doctors.first_name = %s AND doctors.second_name = %s
-                    """, (last_name, first_name, second_name))
-
+                SELECT _id FROM doctors 
+                WHERE last_name = %s AND first_name = %s AND second_name = %s
+            """, (last_name, first_name, second_name))
             doctor_id = cursor.fetchone()
-            print(doctor_id)
-            cursor.execute("""
-                        INSERT INTO schedule (doctor_id, date, start_time, end_time)
-                        VALUES (%s, %s, %s, %s)
-                    """, (doctor_id, available_days, from_time, to_time))
+
+            if doctor_id:
+                cursor.execute("""
+                    INSERT INTO schedules (doctor_id, shift_id, day_of_week)
+                    VALUES (%s, %s, %s)
+                """, (doctor_id[0], shift_id, day_of_week))
+            else:
+                cursor.close()
+                return "Doctor not found", 404
 
         conn.commit()
         cursor.close()
 
         return redirect('/admin/scheduleList')
 
+
 @app.route('/admin/doctorLeaves', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
 def admin_doctorLeaves():
     cursor = conn.cursor()
     current_date = datetime.now().strftime('%Y-%m-%d')
@@ -756,7 +1024,7 @@ def admin_doctorLeaves():
         from_date = request.form.get('from_date', current_date)
         to_date = request.form.get('to_date', current_date)
 
-        query="""SELECT doctors.last_name, doctors.first_name, doctors.second_name, doctorLeaves.leave_type, doctorLeaves.from_date, 
+        query = """SELECT doctors.last_name, doctors.first_name, doctors.second_name, doctorLeaves.leave_type, doctorLeaves.from_date, 
                        doctorLeaves.to_date, doctorLeaves.reason, doctorLeaves.status, doctorLeaves._id,
                         (doctorLeaves.to_date - doctorLeaves.from_date + 1) AS days_count 
                        FROM doctorLeaves JOIN doctors on doctors._id=doctorLeaves.doctor_id """
@@ -782,8 +1050,12 @@ def admin_doctorLeaves():
         result = cursor.fetchall()
         cursor.close()
         return render_template('doctorLeaves.html', doctorLeaves=result, current_date=current_date)
+
+
 @app.route('/admin/addLeave', methods=['GET', 'POST'])
 @app.route('/admin/addLeave/<int:leave_id>', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
 def admin_addLeave(leave_id=None):
     cursor = conn.cursor()
     if request.method == 'GET':
@@ -836,7 +1108,7 @@ def admin_addLeave(leave_id=None):
                     SELECT doctors._id FROM doctors WHERE doctors.last_name = %s AND doctors.first_name = %s AND doctors.second_name = %s
                 """, (last_name, first_name, second_name))
 
-            doctor_id=cursor.fetchone()
+            doctor_id = cursor.fetchone()
             print(doctor_id)
             cursor.execute("""
                     INSERT INTO doctorLeaves (doctor_id, leave_type, from_date, to_date, reason, status)
@@ -848,7 +1120,10 @@ def admin_addLeave(leave_id=None):
 
         return redirect('/admin/doctorLeaves')
 
+
 @app.route('/admin/appointmentList', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
 def adminAppointmentList():
     cursor = conn.cursor()
     current_date = datetime.now().strftime('%Y-%m-%d')
@@ -880,7 +1155,8 @@ def adminAppointmentList():
                     AND (doctors.first_name ILIKE %s OR doctors.second_name ILIKE %s OR doctors.last_name ILIKE %s 
                     OR patients.first_name ILIKE %s OR patients.second_name ILIKE %s OR patients.last_name ILIKE %s)
                 """
-            params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
+            params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%",
+                           f"%{search_query}%", f"%{search_query}%"])
         if status:
             query += " AND talons.status = %s"
             params.append(status)
@@ -894,6 +1170,393 @@ def adminAppointmentList():
         result = cursor.fetchall()
         cursor.close()
         return render_template('appointmentList.html', appointments=result, current_date=current_date)
+
+
+@app.route('/admin/addAppointment', methods=['GET', 'POST'])
+@app.route('/admin/addAppointment/<int:appointment_id>', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
+def admin_addAppointment(appointment_id=None):
+    cursor = conn.cursor()
+    if request.method == 'GET':
+        if appointment_id:
+            cursor.execute("""
+                       SELECT doctors.last_name, doctors.first_name,  doctors.second_name, 
+                        patients.last_name, patients.first_name,  patients.second_name, talons.date, talons.time, 
+                        talons.status, talons.purpose, talons._id 
+                        FROM talons JOIN doctors on doctors._id=talons.doctor_id 
+                        JOIN patients on patients._id=talons.patient_id 
+                        WHERE talons._id = %s
+                    """, (appointment_id,))
+            appointment_data = cursor.fetchone()
+            cursor.close()
+
+            if appointment_data:
+                return render_template('editAppointnment.html', appoinment=appointment_data, appointment_id=appointment_id)
+            else:
+                return "Leave not found", 404
+        else:
+            empty_leave_data = {
+                'time': '',
+                'date': '',
+                'to_date': '',
+                'reason': '',
+                'status': '',
+                'last_name': '',
+                'first_name': '',
+                'second_name': ''
+            }
+            return render_template('editAppointnment.html',  appoinment=empty_leave_data)
+
+    if request.method == 'POST':
+        doctor_name = request.form.get('doctor_name', '').strip()
+        patient_name = request.form.get('patient_name', '').strip()
+        date = request.form.get('date')
+        time = request.form.get('time')
+        purpose = request.form.get('reason')
+        status = request.form.get('status')
+
+        if appointment_id:
+            cursor.execute("""
+                    UPDATE talons
+                    SET date = %s, time = %s, purpose = %s,status = %s
+                    WHERE _id = %s
+                """, (date, time, purpose, status, appointment_id))
+        else:
+            doctor_names = doctor_name.split()
+            dlast_name, dfirst_name, dsecond_name = doctor_names
+            patient_names = patient_name.split()
+            plast_name, pfirst_name, psecond_name = patient_names
+            cursor.execute("""
+                    SELECT doctors._id FROM doctors WHERE doctors.last_name = %s AND doctors.first_name = %s AND doctors.second_name = %s
+                """, (dlast_name, dfirst_name, dsecond_name))
+
+            doctor_id = cursor.fetchone()
+            cursor.execute("""
+                    SELECT patients._id FROM patients WHERE patients.last_name = %s AND patients.first_name = %s AND patients.second_name = %s
+                """, (plast_name, pfirst_name, psecond_name))
+
+            patient_id = cursor.fetchone()
+            print(doctor_id)
+            cursor.execute("""
+                    INSERT INTO talons (doctor_id, patient_id, date, time, purpose, status)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (doctor_id, patient_id, date, time, purpose, status))
+
+        conn.commit()
+        cursor.close()
+
+        return redirect('/admin/appointmentList')
+
+
+@app.route('/admin/patientsList', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
+def admin_patientsList():
+    cursor = conn.cursor()
+    if (request.method == 'GET'):
+        cursor.execute("SELECT patients.last_name, patients.first_name, patients.second_name, patients.phone_number, "
+                       "patients.gender, country, city, street, house, flat, patients._id, patients.email "
+                       "FROM patients JOIN addresses on addresses._id=patients.address_id "
+                       "ORDER BY patients.last_name ASC")
+        result = cursor.fetchall()
+        cursor.close()
+        return render_template('patientsList.html', patients=result)
+    if (request.method == 'POST'):
+        search_query = request.form.get('search_query', '').strip()
+        search_query = f"%{search_query}%"
+        cursor.execute("""
+                        SELECT patients.last_name, patients.first_name, patients.second_name, patients.phone_number, 
+                       patients.gender, country, city, street, house, flat, patients._id, patients.email
+                       FROM patients JOIN addresses on addresses._id=patients.address_id 
+                       WHERE patients.first_name ILIKE %s OR patients.second_name ILIKE %s OR patients.last_name ILIKE %s 
+                       ORDER BY patients.last_name ASC;""", (search_query, search_query, search_query))
+        search = cursor.fetchall()
+        print(search)
+        return render_template('patientsList.html', patients=search)
+
+@app.route('/admin/addPatient', methods=['GET', 'POST'])
+@app.route('/admin/addPatient/<int:patient_id>', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
+def admin_addPatient(patient_id=None):
+    cursor = conn.cursor()
+    if request.method == 'GET':
+        if patient_id:
+            cursor.execute("""
+                      SELECT patients.last_name, patients.first_name, patients.second_name, patients.phone_number, 
+                       patients.gender, country, city, street, house, flat, patients._id, users.login, b_day 
+                       FROM patients JOIN addresses on addresses._id=patients.address_id 
+                       JOIN users on users._id=patients.user_id 
+                        WHERE patients._id = %s
+                    """, (patient_id,))
+            patient_data = cursor.fetchone()
+            cursor.close()
+
+            if patient_data:
+                return render_template('editPatient.html', patient=patient_data, patient_id=patient_id)
+        else:
+            empty_leave_data = {
+                'phone': '',
+                'dob': '',
+                'email': '',
+                'last_name': '',
+                'first_name': '',
+                'second_name': ''
+            }
+            return render_template('editPatient.html',  patient=empty_leave_data)
+
+    if request.method == 'POST':
+        first_name=request.form.get('firstname', '').strip()
+        last_name=request.form.get('lastname', '').strip()
+        second_name=request.form.get('secondname', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        dob = request.form.get('dob')
+        gender = request.form.get('gender')
+        country=request.form.get('country')
+        city=request.form.get('city')
+        street=request.form.get('street')
+        house = request.form.get('house')
+        flat = request.form.get('flat')
+        if patient_id:
+            cursor.execute("""
+                    UPDATE patients
+                    SET phone_number = %s, b_day = %s, gender = %s, email=%s
+                    WHERE _id = %s
+                """, (phone, dob, gender, email, patient_id))
+            conn.commit()
+            cursor.execute("""SELECT patients.address_id FROM patients WHERE patients._id = %s""",
+                           (patient_id,))
+            address_id = cursor.fetchone()
+            cursor.execute("""
+                                UPDATE addresses
+                                SET country=%s, city = %s, street = %s, house = %s, flat=%s
+                                WHERE _id = %s
+                            """, (country, city,street, house, flat, address_id))
+            conn.commit()
+            cursor.execute("""SELECT patients.user_id FROM patients WHERE patients._id = %s""",
+                           (patient_id,))
+            user_id = cursor.fetchone()
+            cursor.execute("""
+                                               UPDATE users
+                                               SET login=%s
+                                               WHERE _id = %s
+                                           """, (email, user_id))
+            conn.commit()
+        else:
+
+            cursor.execute("""INSERT INTO addresses(country, city, house, flat, street)
+            VALUES (%s, %s, %s, %s, %s)""", (country, city, house, flat, street))
+            conn.commit()
+
+            cursor.execute("""SELECT addresses._id FROM addresses 
+            WHERE country=%s AND city=%s AND house=%s AND flat=%s AND street=%s""", (country, city, house, flat, street))
+            address_id = cursor.fetchone()
+
+            cursor.execute("""INSERT INTO users(login, password, role_id)
+                                        VALUES (%s, %s, %s)""", (email, "", 1))
+            conn.commit()
+
+            cursor.execute("""SELECT users._id FROM users 
+                                        WHERE login=%s AND role_id=%s""",
+                           (email, 1))
+            user_id = cursor.fetchone()
+
+            cursor.execute("""
+                    INSERT INTO patients(first_name, last_name, second_name, phone_number, email, b_day, address_id, user_id, gender)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (first_name, last_name, second_name, phone, email, dob, address_id, user_id, gender))
+            conn.commit()
+            cursor.close()
+
+        return redirect('/admin/patientsList')
+
+
+@app.route('/admin/doctorsList', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
+def admin_doctorsList():
+    cursor = conn.cursor()
+    cursor.execute("SELECT _id, department FROM departments ORDER BY department ASC")
+    departments = cursor.fetchall()
+
+    if (request.method == 'GET'):
+        cursor.execute("SELECT doctors._id, last_name, first_name, second_name, departments.department, phone_number,"
+                       "start_date, users.login, university, faculty, specialization "
+                       "FROM doctors JOIN addresses on addresses._id=doctors.address_id "
+                       "JOIN users on users._id=doctors.user_id "
+                       "JOIN departments on departments._id = doctors.department_id "
+                       "JOIN education on education._id=doctors.education_id "
+                       "ORDER BY doctors.last_name ASC")
+        result = cursor.fetchall()
+        cursor.close()
+        return render_template('doctorsList.html', doctors=result, departments=departments)
+    if (request.method == 'POST'):
+        search_query = request.form.get('search_query', '').strip()
+        department_id = request.form.get('department_id', '').strip()
+        search_query = f"%{search_query}%"
+        query="""
+                SELECT doctors._id, last_name, first_name, second_name, departments.department, phone_number,
+                start_date, users.login, university, faculty, specialization 
+                FROM doctors JOIN addresses on addresses._id=doctors.address_id 
+                JOIN users on users._id=doctors.user_id 
+                JOIN departments on departments._id = doctors.department_id 
+                JOIN education on education._id=doctors.education_id 
+        """
+        params = []
+        if search_query:
+            query += """
+                        WHERE (first_name ILIKE %s OR second_name ILIKE %s OR last_name ILIKE %s)
+                    """
+            params.extend([search_query, search_query, search_query])
+        if department_id:
+            query += " AND department_id = %s"
+            params.append(department_id)
+
+        query += " ORDER BY last_name ASC"
+        cursor.execute(query, params)
+        search = cursor.fetchall()
+        return render_template('doctorsList.html', doctors=search,departments=departments)
+
+@app.route('/admin/addDoctor', methods=['GET', 'POST'])
+@app.route('/admin/addDoctor/<int:doctor_id>', methods=['GET', 'POST'])
+@login_required
+@role_required(['admin'])
+def admin_addDoctor(doctor_id=None):
+    cursor = conn.cursor()
+    cursor.execute("SELECT _id, department FROM departments ORDER BY department ASC")
+    departments = cursor.fetchall()
+    if request.method == 'GET':
+        if doctor_id:
+            cursor.execute("""
+                      SELECT doctors._id, last_name, first_name, second_name, departments.department, phone_number, 
+                        users.login, gender, university, faculty, specialization, birthday, country, city, street, house, flat   
+                        FROM doctors JOIN addresses on addresses._id=doctors.address_id 
+                        JOIN users on users._id=doctors.user_id 
+                        JOIN departments on departments._id = doctors.department_id 
+                        JOIN education on education._id=doctors.education_id
+                        WHERE doctors._id = %s
+                    """, (doctor_id,))
+            doctor_data = cursor.fetchone()
+            cursor.close()
+
+            if doctor_data:
+                return render_template('editDoctor.html', doctor=doctor_data, doctor_id=doctor_id, departments=departments)
+        else:
+            empty_leave_data = {
+                'phone': '',
+                'dob': '',
+                'email': '',
+                'last_name': '',
+                'first_name': '',
+                'second_name': ''
+            }
+            return render_template('editDoctor.html',  doctor=empty_leave_data,  departments=departments)
+
+    if request.method == 'POST':
+        first_name=request.form.get('firstname', '').strip()
+        last_name=request.form.get('lastname', '').strip()
+        second_name=request.form.get('secondname', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        dob = request.form.get('dob')
+        gender = request.form.get('gender')
+        country=request.form.get('country')
+        city=request.form.get('city')
+        street=request.form.get('street')
+        house = request.form.get('house')
+        flat = request.form.get('flat')
+        department=request.form.get('department')
+        university=request.form.get('university')
+        faculty=request.form.get('faculty')
+        specialization=request.form.get('specialization')
+        if doctor_id:
+            cursor.execute("""
+                    UPDATE doctors
+                    SET phone_number = %s, birthday = %s, gender = %s
+                    WHERE _id = %s
+                """, (phone, dob, gender, doctor_id))
+            conn.commit()
+            cursor.execute("""SELECT doctors.address_id FROM doctors WHERE doctors._id = %s""",
+                           (doctor_id,))
+            address_id = cursor.fetchone()
+            cursor.execute("""
+                                UPDATE addresses
+                                SET country=%s, city = %s, street = %s, house = %s, flat=%s
+                                WHERE _id = %s
+                            """, (country, city, street, house, flat, address_id))
+            conn.commit()
+            cursor.execute("""SELECT doctors.education_id FROM doctors WHERE doctors._id = %s""",
+                           (doctor_id,))
+            education_id = cursor.fetchone()
+            cursor.execute("""
+                                   UPDATE education
+                                   SET university=%s, faculty = %s, specialization = %s
+                                   WHERE _id = %s
+                               """, (university, faculty, specialization, education_id))
+            conn.commit()
+            cursor.execute("""SELECT doctors.user_id FROM doctors WHERE doctors._id = %s""",
+                           (doctor_id,))
+            user_id = cursor.fetchone()
+            cursor.execute("""
+                                   UPDATE users
+                                   SET login=%s
+                                   WHERE _id = %s
+                               """, (email, user_id))
+            conn.commit()
+
+            cursor.execute("""
+                                   UPDATE doctors
+                                   SET department_id=%s
+                                   WHERE _id = %s
+                               """, (department, doctor_id))
+            conn.commit()
+
+        else:
+
+            cursor.execute("""SELECT addresses._id FROM addresses 
+                        WHERE country=%s AND city=%s AND house=%s AND flat=%s AND street=%s""",
+                           (country, city, house, flat, street))
+            address_id = cursor.fetchone()
+            if address_id is None:
+                cursor.execute("""INSERT INTO addresses(country, city, house, flat, street)
+                VALUES (%s, %s, %s, %s, %s)""", (country, city, house, flat, street))
+                conn.commit()
+                cursor.execute("""SELECT addresses._id FROM addresses 
+                WHERE country=%s AND city=%s AND house=%s AND flat=%s AND street=%s""", (country, city, house, flat, street))
+                address_id = cursor.fetchone()
+
+            cursor.execute("""SELECT education._id FROM education 
+             WHERE university=%s AND faculty=%s AND specialization=%s""", (university, faculty, specialization))
+            education_id = cursor.fetchone()
+            if education_id==None:
+                cursor.execute("""INSERT INTO education(university, faculty, specialization)
+                VALUES (%s, %s, %s)""", (university, faculty, specialization))
+                conn.commit()
+
+                cursor.execute("""SELECT education._id FROM education 
+                WHERE university=%s AND faculty=%s AND specialization=%s""", (university, faculty, specialization))
+                education_id = cursor.fetchone()
+
+            cursor.execute("""INSERT INTO users(login, password, role_id)
+                            VALUES (%s, %s, %s)""", (email, "1", 2))
+            conn.commit()
+
+            cursor.execute("""SELECT users._id FROM users 
+                            WHERE login=%s AND role_id=%s""",
+                           (email, 2))
+            user_id = cursor.fetchone()
+            print(first_name, last_name, second_name, phone, education_id, address_id, user_id, gender, department, dob)
+            cursor.execute("""
+                    INSERT INTO doctors(first_name, last_name, second_name, phone_number, education_id, address_id, 
+                    user_id, gender, department_id, birthday)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (first_name, last_name, second_name, phone, education_id, address_id, user_id, gender, department, dob))
+            conn.commit()
+            cursor.close()
+
+        return redirect('/admin/doctorsList')
 
 if __name__ == '__main__':
     app.run(debug=True)

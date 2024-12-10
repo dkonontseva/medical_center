@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-     <meta charset="UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pre Clinic - Leave Management</title>
     <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
@@ -423,8 +423,22 @@
         <form method="POST" action="/admin/scheduleList">
             <div class="filters" style="display: flex; gap: 15px; align-items: center;">
                 <input type="text" name="search_query" class="filter-input" placeholder="Search by doctor name">
-                <input type="date" name="from_date" id="date" class="filter-input" value="{{ current_date }}">
-                <input type="date" name="to_date" id="date" class="filter-input" value="{{ current_date }}">
+                <select name="day_of_week" class="filter-input">
+                    <option value="">Select Day of Week</option>
+                    <option value="1">Monday</option>
+                    <option value="2">Tuesday</option>
+                    <option value="3">Wednesday</option>
+                    <option value="4">Thursday</option>
+                    <option value="5">Friday</option>
+                    <option value="6">Saturday</option>
+                    <option value="7">Sunday</option>
+                </select>
+                <select name="department_id" class="filter-input">
+                    <option value="">Select Department</option>
+                    {% for department in departments %}
+                        <option value="{{ department[0] }}">{{ department[1] }}</option>
+                    {% endfor %}
+                </select>
                 <button type="submit" class="search-button">Search</button>
             </div>
         </form>
@@ -434,7 +448,7 @@
                     <i class="fas fa-plus"></i>
                     Add New
                 </button>
-                <button class="action-btn refresh-btn">
+                <button class="action-btn refresh-btn" onclick="window.location.href = '/admin/scheduleList'">
                     <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
@@ -453,6 +467,7 @@
                 <tr>
                     <th><input type="hidden"></th>
                     <th>Doctor Name</th>
+                    <th>Department</th>
                     <th> Date</th>
                     <th>From time</th>
                     <th>To time</th>
@@ -467,12 +482,13 @@
                         <td><input type="checkbox" name="selectedRows" value="{{ doctor[6] }}"></td>
                         <td>{{ doctor[0] }} {{ doctor[1] }} {{ doctor[2] }}</td>
                         <td>{{ doctor[3] }}</td>
+                        <td>{{ ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][doctor[6] - 1] }}</td>
                         <td>{{ doctor[4] }}</td>
                         <td>{{ doctor[5] }}</td>
                         <td>
                             <button class="download-btn"
                                     style="background-color: transparent; border-color: transparent"
-                                    onclick=redirectToPage('{{ doctor[6] }}')>
+                                    onclick=redirectToPage('{{ doctor[7] }}')>
                                 <img width="40" height="40"
                                      src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
                                      alt="pencil--v2"/>
@@ -493,7 +509,7 @@
 </div>
 
 <script>
-     flatpickr("#date", {
+    flatpickr("#date", {
         dateFormat: "d-m-y", // Устанавливаем формат даты
         defaultDate: new Date(), // Устанавливаем текущую дату
         static: true // Стационарное отображение календаря

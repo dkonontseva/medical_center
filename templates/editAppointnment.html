@@ -8,7 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
           rel="stylesheet">
     <style>
         * {
@@ -126,6 +126,7 @@
             flex: 1;
             width: 1620px;
         }
+
         .header {
             display: flex;
             justify-content: space-between;
@@ -211,7 +212,7 @@
         }
 
         button {
-            background-color: #4fd1c5;
+            background-color: #4a90e2;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -237,12 +238,12 @@
 
         .header {
             margin-bottom: 20px;
-            color: #4fd1c5;
+            color: #4a90e2;
             font-size: 16px;
         }
 
         .breadcrumb {
-            color: #4fd1c5;
+            color: #4a90e2;
             text-decoration: none;
         }
 
@@ -309,7 +310,7 @@
             margin-top: 30px;
             width: 200px;
             padding: 15px;
-            background-color: #3a57e8;
+            background-color: #4a90e2;
             border: none;
             border-radius: 8px;
             color: white;
@@ -326,7 +327,7 @@
             background-color: white;
             border: none;
             border-radius: 8px;
-            color: #3a57e8;
+            color: #4a90e2;
             font-size: 1.2em;
             cursor: pointer;
             transition: background-color 0.3s ease;
@@ -334,71 +335,13 @@
         }
 
         .submit-button:hover {
-            background-color: #6c87ff;
+            background-color: #4a90e2;
         }
 
         .cancel-button:hover {
             background-color: #cccccc;
         }
 
-        /* Календарь */
-        .flatpickr-calendar {
-            background-color: #565fa5; /* Темный фон */
-            color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-        }
-
-        .flatpickr-day,
-        .flatpickr-weekday {
-            color: white;
-        }
-
-        .flatpickr-day:hover {
-            background-color: rgba(108, 135, 255, 0.3);
-            color: white;
-        }
-
-        .flatpickr-day.today {
-            background-color: #6c87ff;
-            color: white;
-        }
-
-        .flatpickr-month {
-            background-color: #262626;
-        }
-
-        .flatpickr-prev-month, .flatpickr-next-month {
-            color: #6c87ff;
-        }
-
-        .flatpickr-current-month {
-            color: #6c87ff;
-        }
-
-        .flatpickr-time {
-            background-color: #2e2e2e;
-            color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-        }
-
-        .flatpickr-time .flatpickr-hour,
-        .flatpickr-time .flatpickr-minute,
-        .flatpickr-time .flatpickr-second {
-            background-color: #262626;
-            color: #6c87ff;
-            border-radius: 6px;
-            padding: 5px;
-        }
-
-        .flatpickr-time .flatpickr-time-separator {
-            color: #2e2e2e;
-        }
-
-        .flatpickr-time .flatpickr-time:hover {
-            background-color: rgba(108, 135, 255, 0.3);
-        }
 
         /* Responsive Design */
         @media (max-width: 1200px) {
@@ -458,58 +401,67 @@
     <!-- Main Content -->
     <div class="main-content">
         <div class="header">
-            <h2>Doctor Schedule</h2>
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search here">
-            </div>
+            <h2>{{ 'Edit Appointment' if appointment_id else 'Create Appointment' }}</h2>
         </div>
 
         <div class="container1">
             <div class="header">
-                <a href="#" class="breadcrumb">Appointments</a> &gt; <span
-                    class="breadcrumb-active">Edit Appointments</span>
+                <a href="/admin/appointmentList" class="breadcrumb">Appointments</a> &gt;
+                <span class="breadcrumb-active">{{ 'Edit Appointment' if appointment_id else 'Create Appointment' }}</span>
             </div>
             <section class="edit-schedule">
-                <h2>Edit Appointments</h2>
-                <form id="edit-schedule-form">
+                <h2>{{ 'Edit Appointment' if appointment_id else 'Create Appointment' }}</h2>
+                <form id="edit-appointment-form" method="POST"
+                      action="{{ url_for('admin_addAppointment', appointment_id=appointment_id) if appointment_id else url_for('admin_addAppointment') }}">
                     <div class="form-row">
                         <div class="form-group">
                             <label for="doctor-name">Doctor Name *</label>
-                            <input type="text" id="doctor-name" value="Dr. William Stephin" readonly>
+                            <input type="text" id="doctor-name" name="doctor_name"
+                                   value="{{ appoinment[0] }} {{ appoinment[1] }} {{ appoinment[2] }}"
+                                    {{ 'readonly' if appointment_id }}>
                         </div>
                         <div class="form-group">
                             <label for="patient-name">Patient Name *</label>
-                            <input type="text" id="patient-name" value="William Stephin" readonly>
+                            <input type="text" id="patient-name" name="patient_name"
+                                   value="{{ appoinment[3] }} {{ appoinment[4] }} {{ appoinment[5] }}"
+                                    {{ 'readonly' if appointment_id }}>
                         </div>
                     </div>
                     <div class="form-row">
-
                         <div class="form-group">
                             <label for="date">Date *</label>
-                            <input type="date" id="date">
+                            <input type="date" id="date" name="date"
+                                   value="{{ appoinment[6] if appointment_id else '' }}" required>
                         </div>
                         <div class="form-group">
                             <label for="time">Time *</label>
-                            <input type="time" id="time" value="18:00">
+                            <input type="time" id="time" name="time"
+                                   value="{{ appoinment[7] if appointment_id else '' }}" required>
                         </div>
                     </div>
                     <div class="form-group">
                         <label for="notes">Reason *</label>
-                        <textarea id="notes" placeholder="Enter any notes..."></textarea>
+                        <textarea id="notes" name="reason" placeholder="Enter any notes..."
+                                  required>{{ appoinment[9] if appointment_id else '' }}</textarea>
                     </div>
                     <div class="form-group status-group">
                         <label>Status *</label>
-                        <input type="radio" id="approved" name="status" value="approved" checked>
+                        <input type="radio" id="approved" name="status" value="approved"
+                               {% if appoinment[8] == 'approved' %}checked{% endif %}>
                         <label for="approved">Approved</label>
-                        <input type="radio" id="pending" name="status" value="pending">
+                        <input type="radio" id="pending" name="status" value="pending"
+                               {% if appoinment[8] == 'pending' %}checked{% endif %}>
                         <label for="pending">Pending</label>
-                        <input type="radio" id="rejected" name="status" value="rejected" >
+                        <input type="radio" id="rejected" name="status" value="rejected"
+                               {% if appoinment[8] == 'rejected' %}checked{% endif %}>
                         <label for="rejected">Rejected</label>
                     </div>
                     <div class="button-group">
-                        <button type="submit" class="submit-button">Save Appointment</button>
-                        <button type="button" class="cancel-button" onclick="cancelEdit()">Cancel</button>
+                        <button type="submit"
+                                class="submit-button">{{ 'Save Changes' if appointment_id else 'Create Appointment' }}</button>
+                        <button type="button" class="cancel-button"
+                                onclick="window.location.href='/admin/appointmentList';">Cancel
+                        </button>
                     </div>
                 </form>
             </section>

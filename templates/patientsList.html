@@ -421,7 +421,7 @@
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <div class="action-buttons">
-                <button class="action-btn add-btn" onclick="redirectToPage()">
+                <button class="action-btn add-btn" onclick="window.location.href = '/admin/addPatient'">
                     <i class="fas fa-plus"></i>
                     Add New
                 </button>
@@ -472,7 +472,7 @@
                             <td>
                                 <button class="download-btn"
                                         style="background-color: transparent; border-color: transparent"
-                                        onclick="editDoctor.html">
+                                        onclick="redirectToPage('{{ patient[10] }}')">
                                     <img width="40" height="40"
                                          src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
                                          alt="pencil--v2"/>
@@ -514,8 +514,8 @@
         });
     });
 
-    function redirectToPage() {
-        window.location.href = "addPatient.html";
+    function redirectToPage(patientId) {
+        window.location.href = `/admin/addPatient/${patientId}`;
     }
 </script>
 </body>

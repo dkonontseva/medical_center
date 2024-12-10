@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
           rel="stylesheet">
     <style>
         * {
@@ -16,6 +16,7 @@
             box-sizing: border-box;
             font-family: 'Poppins', sans-serif;
         }
+
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #f5f7fb;
@@ -182,8 +183,17 @@
 
         input[type="radio"]:checked + .gender-option {
             background-color: #eef3fd; /* Light neon green */
-            border-color: #6c87ff; /* Neon green border */
+            border-color: #4a90e2; /* Neon green border */
             box-shadow: 0 0 10px rgb(29, 68, 255); /* Neon glow effect */
+        }
+
+        .breadcrumb {
+            color: #4a90e2;
+            text-decoration: none;
+        }
+
+        .breadcrumb-active {
+            color: #333;
         }
 
         .personal-info, .medical-info, .document-upload {
@@ -219,7 +229,7 @@
             margin-top: 30px;
             width: 200px;
             padding: 15px;
-            background-color: #3a57e8;
+            background-color: #4a90e2;
             border: none;
             border-radius: 8px;
             color: white;
@@ -230,7 +240,7 @@
         }
 
         .submit-btn:hover {
-            background-color: #3a57e8;
+            background-color: #4a90e2;
         }
 
         .button-btn {
@@ -240,7 +250,7 @@
             background-color: white;
             border: none;
             border-radius: 8px;
-            color: #3a57e8;
+            color: #4a90e2;
             font-size: 1.2em;
             cursor: pointer;
             transition: background-color 0.3s ease;
@@ -248,7 +258,7 @@
         }
 
         .flatpickr-calendar {
-            background-color: #565fa5; /* Темный фон */
+            background-color: #565fa5;
             color: white;
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
@@ -265,7 +275,7 @@
         }
 
         .flatpickr-day.today {
-            background-color: #6c87ff;
+            background-color: #4a90e2;
             color: white;
         }
 
@@ -274,11 +284,11 @@
         }
 
         .flatpickr-prev-month, .flatpickr-next-month {
-            color: #6c87ff;
+            color: #4a90e2;
         }
 
         .flatpickr-current-month {
-            color: #6c87ff;
+            color: #4a90e2;
         }
 
     </style>
@@ -318,116 +328,130 @@
 
     <!-- Main Content -->
     <div class="main-content">
+        <div class="header">
+            <h2>{{ 'Edit Patient' if patient_id else 'Add Patient' }}</h2>
+        </div>
 
         <section class="content">
-
+            <div class="header">
+                <a href="/admin/patientsList" class="breadcrumb">Patients</a>
+            </div>
             <div class="card">
-                <form class="form">
-                    <div class="personal-info"><!-- Personal Information -->
-                        <h2>Add Patient</h2>
-                        <div class="personal-info">
+                <form class="form" method="POST"
+                      action="{{ url_for('admin_addPatient', patient_id=patient_id) if patient_id else url_for('admin_addPatient') }}">
+                    <div class="personal-info">
+                        <div class="two-columns">
+                            <div class="form-field">
+                                <label for="lastname">Surname</label>
+                                <input type="text" id="lastname" name="lastname"
+                                       placeholder="Enter your surname"
+                                       value="{{ patient[0] if patient_id else '' }}" required>
+                            </div>
+
+                            <div class="form-field">
+                                <label for="firstname">Name</label>
+                                <input type="text" id="firstname" name="firstname"
+                                       placeholder="Enter your name"
+                                       value="{{ patient[1] if patient_id else '' }}" required>
+                            </div>
+
+                            <div class="form-field">
+                                <label for="secondname">Second Name</label>
+                                <input type="text" id="secondname" name="secondname"
+                                       placeholder="Enter your second name"
+                                       value="{{ patient[2] if patient_id else '' }}" required>
+                            </div>
+
+                            <div class="form-field">
+                                <label for="phone">Phone Number</label>
+                                <input type="text" id="phone" name="phone"
+                                       placeholder="Enter your phone number"
+                                       value="{{ patient[3] if patient_id else '' }}" required>
+                            </div>
+
+                            <div class="form-field">
+                                <label for="email">Email</label>
+                                <input type="email" id="email" name="email"
+                                       placeholder="Enter your email"
+                                       value="{{ patient[11] if patient_id else '' }}" required>
+                            </div>
+
+                            <div class="form-field">
+                                <label for="dob">Date of Birth</label>
+                                <input type="date" id="dob" name="dob"
+                                       value="{{ patient[12] if patient_id else '' }}" required>
+                            </div>
+
+                            <div class="form-field">
+                                <label>Gender</label>
+                                <div>
+                                    <input type="radio" id="male" name="gender" value="male"
+                                           {% if patient[4] == 'male' %}checked{% endif %} required>
+                                    <label for="male" class="gender-option">Male</label>
+
+                                    <input type="radio" id="female" name="gender" value="female"
+                                           {% if patient[4] == 'female' %}checked{% endif %}>
+                                    <label for="female" class="gender-option">Female</label>
+
+                                    <input type="radio" id="other" name="gender" value="other"
+                                           {% if patient[4] == 'other' %}checked{% endif %}>
+                                    <label for="other" class="gender-option">Other</label>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Address Information -->
+                        <div class="address-info">
+                            <h2>Address Information</h2>
                             <div class="two-columns">
                                 <div class="form-field">
-                                    <label for="fio">Surname</label>
-                                    <input type="text" id="surname" name="lastname" placeholder="Enter your surname"
-                                           required>
+                                    <label for="country">Country</label>
+                                    <input type="text" id="country" name="country"
+                                           placeholder="Enter your country"
+                                           value="{{ patient[5] if patient_id else '' }}" required>
                                 </div>
 
                                 <div class="form-field">
-                                    <label for="fio">Name</label>
-                                    <input type="text" id="name" name="name" placeholder="Enter your name" required>
+                                    <label for="city">City</label>
+                                    <input type="text" id="city" name="city"
+                                           placeholder="Enter your city"
+                                           value="{{ patient[6] if patient_id else '' }}" required>
                                 </div>
 
                                 <div class="form-field">
-                                    <label for="fio">Second Name</label>
-                                    <input type="text" id="secondname" name="secondname"
-                                           placeholder="Enter your second name"
-                                           required>
+                                    <label for="street">Street</label>
+                                    <input type="text" id="street" name="street"
+                                           placeholder="Enter your street"
+                                           value="{{ patient[7] if patient_id else '' }}" required>
                                 </div>
 
                                 <div class="form-field">
-                                    <label for="phone">Phone Number</label>
-                                    <input type="text" id="phone" name="phone" placeholder="Enter your phone number"
-                                           required>
+                                    <label for="house">House</label>
+                                    <input type="text" id="house" name="house"
+                                           placeholder="Enter your house number"
+                                           value="{{ patient[8] if patient_id else '' }}" required>
                                 </div>
 
                                 <div class="form-field">
-                                    <label for="email">Email</label>
-                                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
-                                </div>
-
-                                <div class="form-field">
-                                    <label for="address">Address</label>
-                                    <input type="text" id="address" name="address" placeholder="Enter your address"
-                                           required>
-                                </div>
-
-                                <div class="form-field">
-                                    <label for="dob">Date of Birth</label>
-                                    <input type="date" id="dob" name="dob" placeholder="Select your date of birth"
-                                           required>
-                                </div>
-
-
-                                <div class="form-field">
-                                    <label>Gender</label>
-                                    <div>
-                                        <input type="radio" id="male" name="gender" value="male" required>
-                                        <label for="male" class="gender-option">Male</label>
-
-                                        <input type="radio" id="female" name="gender" value="female">
-                                        <label for="female" class="gender-option">Female</label>
-
-                                        <input type="radio" id="other" name="gender" value="other">
-                                        <label for="other" class="gender-option">Other</label>
-                                    </div>
+                                    <label for="flat">Flat</label>
+                                    <input type="text" id="flat" name="flat"
+                                           placeholder="Enter your flat number"
+                                           value="{{ patient[9] if patient_id else '' }}" required>
                                 </div>
                             </div>
                         </div>
-                        <!-- Medical Information -->
-                        <div class="medical-info">
-                            <h2>Medical Information</h2>
-
-                            <div class="info">
-                                <div class="form-field">
-                                    <label for="medicalCard">Medical Card Number</label>
-                                    <input type="text" id="medicalCard" name="medicalCard"
-                                           placeholder="Enter your medical card number" required>
-                                </div>
-
-                                <div class="form-field">
-                                    <label for="lastVisit">Last Doctor Visit Results</label>
-                                    <input type="text" id="lastVisit" name="lastVisit"
-                                           placeholder="Enter results of last visit"
-                                           required>
-                                </div>
-
-                                <div class="form-field">
-                                    <label for="medicalHistory">Medical History</label>
-                                    <input type="text" id="medicalHistory" name="medicalHistory"
-                                           placeholder="Enter your medical history" required>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Document Upload -->
-                        <div class="document-upload">
-                            <h2>Document Upload</h2>
-                            <div class="form-field" style="margin-top: 20px">
-                                <label for="document">Upload Identity Document</label>
-                                <input type="file" id="document" accept=".pdf, .jpg, .jpeg, .png" required>
-                            </div>
-                        </div>
+                    </div>
 
 
-                        <div class="btn">
-                            <button type="submit" class="submit-btn">Save Changes</button>
-                            <button type="button" class="button-btn">Close</button>
-                        </div>
+                    <!-- Buttons -->
+                    <div class="btn">
+                        <button type="submit" class="submit-btn">Save Changes</button>
+                        <button type="button" class="button-btn" onclick="window.location.href='/admin/patientsList';">
+                            Close
+                        </button>
                     </div>
                 </form>
             </div>
         </section>
-
     </div>
 </div>
 <script>

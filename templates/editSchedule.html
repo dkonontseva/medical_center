@@ -342,6 +342,20 @@
             background-color: #cccccc;
         }
 
+        .filter-input {
+            background: white;
+            border-radius: 8px;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            outline: none;
+            font-size: 14px;
+            color: #525252;
+        }
+
+        .filter-input::placeholder {
+            color: #8A92A6;
+        }
+
         .flatpickr-time {
             background-color: #2e2e2e;
             color: white;
@@ -471,34 +485,48 @@
                 <h2>{{ 'Edit Schedule' if schedule_id else 'Create Schedule' }}</h2>
                 <form id="edit-schedule-form" method="POST"
                       action="{{ url_for('add_schedule', schedule_id=schedule_id) if schedule_id else url_for('add_schedule') }}">
+                    <!-- Doctor Selection -->
                     <div class="form-row">
                         <div class="form-group">
                             <label for="doctor-name">Doctor Name *</label>
                             <input type="text" id="doctor-name" name="doctor_name"
-                                   value="{{ leave[0] }} {{ leave[1] }} {{ leave[2] }}"
-                                    {{ 'readonly' if schedule_id }}>
+                                   value="{{ schedule[0] }} {{ schedule[1] }} {{ schedule[2] }}"
+                                   {% if schedule_id %}readonly{% endif %} required>
                         </div>
                     </div>
+                    <!-- Shift Selection -->
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="available-days">Available Days *</label>
-                            <input type="date" id="available-days" name="available-days"
-                                   value="{{ leave[3] if leave else '' }}" required>
+                            <label for="shift">Shift *</label>
+                            <select id="shift" name="shift_id" class="filter-input" required>
+                                <option value="" disabled selected>Select a shift</option>
+                                {% for shift in shifts %}
+                                    <option value="{{ shift[0] }}"
+                                            {% if schedule and schedule[5] == shift[0] %}selected{% endif %}>
+                                        {{ shift[1] }} - {{ shift[2] }}
+                                    </option>
+                                {% endfor %}
+                            </select>
                         </div>
+
                         <div class="form-group">
-                            <label for="from-time">From *</label>
-                            <input type="time" id="from-time" name="from_date"
-                                   value="{{ leave[4] if leave else '' }}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="to-time">To *</label>
-                            <input type="time" id="to-time" name="to_date"
-                                   value="{{ leave[5] if leave else '' }}" required>
+                            <label for="day-of-week">Day of Week *</label>
+                            <select id="day-of-week" name="day_of_week" class="filter-input" required>
+                                <option value="" disabled selected>Select a day</option>
+                                {% for i in range(1, 8) %}
+                                    <option value="{{ i }}"
+                                            {% if schedule and schedule[6] == i %}selected{% endif %}>
+                                        {{ ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][i - 1] }}
+                                    </option>
+                                {% endfor %}
+                            </select>
                         </div>
                     </div>
+                    <!-- Button Group -->
                     <div class="button-group">
-                        <button type="submit"
-                                class="submit-button">{{ 'Save Changes' if schedule_id else 'Create Schedule' }}</button>
+                        <button type="submit" class="submit-button">
+                            {{ 'Save Changes' if schedule_id else 'Create Schedule' }}
+                        </button>
                         <button type="button" class="cancel-button"
                                 onclick="window.location.href='/admin/scheduleList';">Cancel
                         </button>
@@ -506,10 +534,8 @@
                 </form>
             </section>
         </div>
-
     </div>
 </div>
-
 <script>
     // Интерактивность меню
     document.querySelectorAll('.menu-item').forEach(item => {
