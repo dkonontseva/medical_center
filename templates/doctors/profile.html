@@ -411,16 +411,12 @@
     <div class="doctor-profile">
         <img src="https://picsum.photos/200/200?random=1" alt="Doctor Profile">
         <div class="doctor-info">
-            <h3>Dr. Darren Elder</h3>
-            <p>BDS, MDS - Oral & Maxillofacial Surgery</p>
-            <button class="upload-btn">
-                <i class="fas fa-camera"></i> Change Photo
-            </button>
+            <h3>Dr. {{ user_profile[2] }} {{ user_profile[1] }}</h3>
         </div>
     </div>
     <div class="nav-menu">
-        <a href="/doctor/dashboard" class="nav-item">Dashboard</a>
-        <a href="myLeaves.html" class="nav-item">My Patients</a>
+        <a href="/doctor/dashboard" class="nav-item">Dashboard</a>>
+        <a href="/doctor/myLeaves" class="nav-item">My Leaves</a>
         <a href="/doctor/patientsCards" class="nav-item">Patients' cards</a>
         <a href="/doctor/profile" class="nav-item active">Profile Settings</a>
     </div>

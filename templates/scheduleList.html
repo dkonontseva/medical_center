@@ -211,6 +211,11 @@
             color: white;
         }
 
+        .delete-btn {
+            background: #fd6666;
+            color: white;
+        }
+
         .refresh-btn {
             background: white;
             border: 1px solid var(--border-color);
@@ -391,11 +396,11 @@
         </div>
         <div class="menu-item">
             <i class="fas fa-th-large"></i>
-            <a href="/admin/adminDashboard">Dashboard</a>
+            <a href="/admin/dashboard">Dashboard</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-user-md"></i>
-            <a href="doctorsList.html">Doctors</a>
+            <a href="/admin/doctorsList">Doctors</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-users"></i>
@@ -403,15 +408,15 @@
         </div>
         <div class="menu-item">
             <i class="fas fa-calendar-alt"></i>
-            <a href="appointmentList.html">Appointments</a>
+            <a href="/admin/appointmentList">Appointments</a>
         </div>
-        <div class="menu-item active">
+        <div class="menu-item  active">
             <i class="far fa-clock"></i>
             <a href="/admin/scheduleList">Doctor Schedule</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-hospital"></i>
-            <a href="doctorLeaves.html">Doctor Leaves</a>
+            <a href="/admin/doctorLeaves">Doctor Leaves</a>
         </div>
     </div>
     <!-- Main Content -->
@@ -441,6 +446,7 @@
                 </select>
                 <button type="submit" class="search-button">Search</button>
             </div>
+
         </form>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <div class="action-buttons">
@@ -451,17 +457,14 @@
                 <button class="action-btn refresh-btn" onclick="window.location.href = '/admin/scheduleList'">
                     <i class="fas fa-sync-alt"></i>
                 </button>
+
             </div>
         </div>
 
         <!-- Table -->
         <div class="table-container">
-            <div class="export-buttons">
-                <button class="export-btn"><i class="far fa-file-pdf" style="color: #FF5C75;"></i></button>
-                <button class="export-btn"><i class="far fa-file-excel" style="color: #2BC155;"></i></button>
-                <button class="export-btn"><i class="far fa-file-word" style="color: #3B4CB8;"></i></button>
-                <button class="export-btn"><i class="far fa-file" style="color: #8E44AD;"></i></button>
-            </div>
+            <button class="action-btn delete-btn" style="margin-left: 84%" onclick="deleteSelected()">Delete
+            </button>
             <table>
                 <thead>
                 <tr>
@@ -479,7 +482,7 @@
                 <tbody>
                 {% for doctor in doctors %}
                     <tr>
-                        <td><input type="checkbox" name="selectedRows" value="{{ doctor[6] }}"></td>
+                        <td><input type="checkbox" name="selectedRows" value="{{ doctor[7] }}"></td>
                         <td>{{ doctor[0] }} {{ doctor[1] }} {{ doctor[2] }}</td>
                         <td>{{ doctor[3] }}</td>
                         <td>{{ ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][doctor[6] - 1] }}</td>
@@ -518,7 +521,6 @@
             }
         });
     });
-    // Интерактивность меню
     document.querySelectorAll('.menu-item').forEach(item => {
         item.addEventListener('click', function () {
             document.querySelector('.menu-item.active')?.classList.remove('active');
@@ -526,21 +528,38 @@
         });
     });
 
-    // Функциональность поиска
-    document.querySelector('.search-bar input').addEventListener('input', function (e) {
-        console.log('Searching for:', e.target.value);
-    });
-
-    // Обработка экспорта
-    document.querySelectorAll('.export-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
-            console.log('Exporting...');
-        });
-    });
-
     function redirectToPage(scheduleId) {
         window.location.href = `/admin/addSchedule/${scheduleId}`;
     }
+
+    function deleteSelected() {
+        const selectedRows = document.getElementsByName('selectedRows');
+        const selectedValues = [];
+        for (let i = 0; i < selectedRows.length; i++) {
+            if (selectedRows[i].checked) {
+                selectedValues.push(selectedRows[i].value);
+            }
+        }
+
+        fetch('/admin/delete_schedule', {
+            method: 'POST',
+            body: JSON.stringify({values: selectedValues}),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (data.status === 'success') {
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+
 </script>
 </body>
 </html>

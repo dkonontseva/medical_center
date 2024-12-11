@@ -208,6 +208,11 @@
             color: white;
         }
 
+        .delete-btn {
+            background: #fd6666;
+            color: white;
+        }
+
         .refresh-btn {
             background: white;
             border: 1px solid var(--border-color);
@@ -409,27 +414,27 @@
         </div>
         <div class="menu-item">
             <i class="fas fa-th-large"></i>
-            <a href="adminDashboard.html">Dashboard</a>
+            <a href="/admin/dashboard">Dashboard</a>
         </div>
-        <div class="menu-item active">
+        <div class="menu-item  active">
             <i class="fas fa-user-md"></i>
-            <a href="doctorsList.html">Doctors</a>
+            <a href="/admin/doctorsList">Doctors</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-users"></i>
-            <a href="patientsList.html">Patients</a>
+            <a href="/admin/patientsList">Patients</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-calendar-alt"></i>
-            <a href="appointmentList.html">Appointments</a>
+            <a href="/admin/appointmentList">Appointments</a>
         </div>
         <div class="menu-item">
             <i class="far fa-clock"></i>
-            <a href="scheduleList.html">Doctor Schedule</a>
+            <a href="/admin/scheduleList">Doctor Schedule</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-hospital"></i>
-            <a href="doctorLeaves.html">Doctor Leaves</a>
+            <a href="/admin/doctorLeaves">Doctor Leaves</a>
         </div>
     </div>
     <!-- Main Content -->
@@ -464,12 +469,8 @@
 
         <!-- Table -->
         <div class="table-container">
-            <div class="export-buttons">
-                <button class="export-btn"><i class="far fa-file-pdf" style="color: #FF5C75;"></i></button>
-                <button class="export-btn"><i class="far fa-file-excel" style="color: #2BC155;"></i></button>
-                <button class="export-btn"><i class="far fa-file-word" style="color: #3B4CB8;"></i></button>
-                <button class="export-btn"><i class="far fa-file" style="color: #8E44AD;"></i></button>
-            </div>
+            <button class="action-btn delete-btn" style="margin-left: 84%" onclick="deleteSelected()">Delete
+            </button>
             <table>
                 <thead>
                 <tr>
@@ -479,7 +480,6 @@
                     <th>Degree</th>
                     <th>Phone</th>
                     <th>Email</th>
-                    <th>Joining Date</th>
                     <th>Actions</th>
                 </tr>
                 <tbody>
@@ -492,7 +492,6 @@
                             <td>{{ doctor[8] }}, {{ doctor[9] }}, {{ doctor[10] }}</td>
                             <td>{{ doctor[5] }}</td>
                             <td>{{ doctor[7] }}</td>
-                            <td>{{ doctor[6] }}</td>
                             <td>
                                 <button class="download-btn"
                                         style="background-color: transparent; border-color: transparent"
@@ -544,6 +543,34 @@
 
     function redirectToPage(doctorId) {
         window.location.href = `/admin/addDoctor/${doctorId}`;
+    }
+
+    function deleteSelected() {
+        const selectedRows = document.getElementsByName('selectedRows');
+        const selectedValues = [];
+        for (let i = 0; i < selectedRows.length; i++) {
+            if (selectedRows[i].checked) {
+                selectedValues.push(selectedRows[i].value);
+            }
+        }
+
+        fetch('/admin/delete_doctors', {
+            method: 'POST',
+            body: JSON.stringify({values: selectedValues}),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (data.status === 'success') {
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
     }
 </script>
 </body>

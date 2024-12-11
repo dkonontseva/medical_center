@@ -4,7 +4,7 @@ from functools import wraps
 
 import jwt
 import psycopg2
-from flask import Flask, request, render_template, redirect, jsonify, session
+from flask import Flask, request, render_template, redirect, jsonify, session, flash
 
 app = Flask(__name__)
 app.secret_key = '8sJqMOWkUCy2tW6Xiubx'
@@ -17,23 +17,9 @@ JWT_EXP_DELTA_SECONDS = 360
 
 conn = psycopg2.connect(database="medical_center", user="postgres", password="postgres", host="localhost", port="5433")
 
-
-class User:
-    def __init__(self, user_id):
-        self.user_id = user_id
-
-    def get_id(self):
-        return self.user_id
-
-    def set_id(self, user_id):
-        self.user_id = user_id
-
-
-user = User(0)
-
-
 # diana.konontseva@mail.ru diana123
 # doctor: diankabelarus@gmail.com vlad1234
+# doctor: mashkova@gmail.com mashkova123
 def contains_forbidden_chars(string):
     forbidden_chars = [' ', '$', '#', '<', '>', '&', '^', '*', '-', '!', '№', '%', ':', ';', '?', '/', '+', '=',
                        '(', ')', '`', '~', '|', ',']
@@ -77,7 +63,6 @@ def login_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if 'user_id' not in session:
-            # flash("You must be logged in to access this page.", "error")
             return redirect('/login')
         return func(*args, **kwargs)
 
@@ -89,11 +74,11 @@ def role_required(required_roles):
         @wraps(func)
         def wrapper(*args, **kwargs):
             if 'user_role' not in session:
-                # flash("You must be logged in to access this page.", "error")
-                return redirect('/login')
+                flash("You must be logged in to access this page.", "error")
+                return redirect('/error')
             if session['user_role'] not in required_roles:
-                # flash("You do not have permission to access this page.", "error")
-                return redirect('/login')
+                flash("You do not have permission to access this page.", "error")
+                return redirect('/error')
             return func(*args, **kwargs)
 
         return wrapper
@@ -104,8 +89,10 @@ def role_required(required_roles):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     return redirect('/login')
-    # return redirect('/patientDashboard')
 
+@app.route('/error', methods=['GET', 'POST'])
+def error():
+    return render_template('error.html')
 
 @app.route('/registration', methods=['GET', 'POST'])
 def registration():
@@ -153,7 +140,6 @@ def login():
         email = request.form['email']
         password = request.form['password']
 
-        # Retrieve the stored hashed password and salt from the database
         cursor = conn.cursor()
         cursor.execute("SELECT users._id, users.password, role.role FROM users JOIN role "
                        "ON users.role_id = role._id  WHERE login = %s", (email,))
@@ -167,12 +153,6 @@ def login():
         decrypted_password = hashlib.sha256((password + salt).encode()).hexdigest()
 
         if decrypted_password == stored_password:
-            payload = {
-                'email': email,
-                'exp': datetime.utcnow() + timedelta(seconds=JWT_EXP_DELTA_SECONDS)
-            }
-            token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
-            user.set_id(result[0])
 
             session['user_id'] = result[0]
             session['user_email'] = result[1]
@@ -184,7 +164,6 @@ def login():
             if session['user_role'] == 'admin':
                 response = redirect('/admin/dashboard')
 
-            response.set_cookie('token', token)
             return response
         else:
             return render_template('auth.html', error_message="Incorrect password. Please try again.")
@@ -192,7 +171,7 @@ def login():
         return render_template('auth.html')
 
 
-@app.route('/patientDashboard', methods=['GET'])
+@app.route('/patientDashboard', methods=['GET', 'POST'])
 @login_required
 @role_required(['patient'])
 def patient_dashboard():
@@ -204,6 +183,16 @@ def patient_dashboard():
     cursor.execute("SELECT patients.first_name, patients.last_name"
                    " FROM patients WHERE patients.user_id = %s", (user_id,))
     current_user = cursor.fetchone()
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+        appointment_id = request.form.get('appointment_id')
+        if action == 'cancel':
+            cursor.execute("""
+                DELETE FROM talons
+                WHERE _id = %s AND patient_id = %s
+            """, (appointment_id, patient_id))
+        conn.commit()
 
     cursor.execute("""
         SELECT MIN(date) AS next_appointment
@@ -243,7 +232,7 @@ def patient_dashboard():
     visits_by_department = cursor.fetchall()
 
     cursor.execute("""
-        SELECT doctors.first_name, doctors.last_name, departments.department, talons.date, talons.time, talons.status
+        SELECT doctors.first_name, doctors.last_name, departments.department, talons.date, talons.time, talons.status, talons._id 
         FROM talons
         JOIN doctors ON talons.doctor_id = doctors._id
         JOIN departments ON doctors.department_id = departments._id
@@ -286,7 +275,7 @@ def patient_profile():
     if request.method == 'GET':
         cursor.execute("SELECT first_name, last_name, second_name, phone_number, email, b_day, gender, country, "
                        "city, street, house, flat, addresses._id  from patients join addresses on patients.address_id = addresses._id "
-                       "where user_id=%s", (str(session.get('user_id'))))
+                       "where user_id=%s", (session.get('user_id'),))
         result = cursor.fetchone()
         print(result)
         return render_template('patients/profile.html', user_profile=result)
@@ -349,7 +338,7 @@ def patient_change_password():
         repeat_password = request.form.get('repeat-password')
 
         cursor = conn.cursor()
-        cursor.execute("SELECT password FROM users WHERE _id = %s", str(session.get('user_id')))
+        cursor.execute("SELECT password FROM users WHERE _id = %s", (str(session.get('user_id')),))
         result = cursor.fetchone()
 
         stored_password = result[0]
@@ -399,7 +388,7 @@ def myMedicalCard():
         cursor.execute("""SELECT doctors.first_name, doctors.second_name, medical_card.date, medical_card._id FROM medical_card 
                                 join patients on medical_card.patient_id=patients._id 
                                 join doctors on medical_card.doctor_id = doctors._id
-                                where patients.user_id=%s""", (str(session.get('user_id'))))
+                                where patients.user_id=%s""", (str(session.get('user_id')),))
         result = cursor.fetchall()
         cursor.close()
         return render_template('patients/medicalCard.html', medicalCard=result)
@@ -583,7 +572,6 @@ def doctor_dashboard():
             """, (appointment_id, doctor_id))
         conn.commit()
 
-    # Получение данных для статистики
     cursor.execute("""
         SELECT COUNT(DISTINCT patient_id)
         FROM talons
@@ -605,7 +593,6 @@ def doctor_dashboard():
     """, (doctor_id,))
     total_appointments = cursor.fetchone()[0]
 
-    # Запросы для предстоящих и сегодняшних приемов
     cursor.execute("""
         SELECT a._id, p.first_name, p.last_name, a.date, a.time, a.purpose, a.status
         FROM talons a
@@ -694,7 +681,7 @@ def patientsCards():
                                 join patients on medical_card.patient_id=patients._id 
                                 join doctors on medical_card.doctor_id = doctors._id
                                 where doctors.user_id=%s ORDER BY medical_card.date DESC """,
-                       (str(session.get('user_id'))))
+                       (session.get('user_id'),))
         result = cursor.fetchall()
         cursor.close()
         return render_template('doctors/patientsCards.html', medicalCard=result)
@@ -950,7 +937,8 @@ def doctor_change_password():
     new_password = request.form.get('new-password')
     repeat_password = request.form.get('repeat-password')
 
-    cursor.execute("SELECT password FROM users WHERE _id = %s", str(session.get('user_id')))
+    cursor.execute("SELECT password FROM users WHERE _id = %s", (session.get('user_id'),))
+
     result = cursor.fetchone()
 
     decrypted_password = hashlib.sha256((old_password + salt).encode()).hexdigest()
@@ -962,7 +950,7 @@ def doctor_change_password():
             cursor.execute("""
                                         UPDATE users
                                         SET password = %s WHERE _id=%s
-                                    """, (str(encrypted_new), str(session.get('user_id'))))
+                                    """, (str(encrypted_new), session.get('user_id')))
             conn.commit()
             cursor.close()
             return redirect('/doctor/profile')
@@ -1023,51 +1011,6 @@ def admin_dashboard():
                            visits_by_month=visits_by_month_full,
                            visits_by_department=visits_by_department)
 
-
-# @app.route('/admin/scheduleList', methods=['GET', 'POST'])
-# @login_required
-# @role_required(['admin'])
-# def admin_scheduleList():
-#     cursor = conn.cursor()
-#     current_date = datetime.now().strftime('%Y-%m-%d')
-#     cursor.execute("SELECT _id, department FROM departments ORDER BY department ASC")
-#     departments = cursor.fetchall()
-#     if (request.method == 'GET'):
-#         cursor.execute("SELECT doctors.last_name, doctors.first_name, doctors.second_name, schedule.date, "
-#                        "schedule.start_time, schedule.end_time, schedule._id FROM doctors JOIN schedule on doctors._id=schedule.doctor_id "
-#                        "ORDER BY doctors.last_name ASC")
-#         result = cursor.fetchall()
-#         cursor.close()
-#         return render_template('scheduleList.html', doctors=result, current_date=current_date, departments=departments)
-#     if request.method == 'POST':
-#         search_query = request.form.get('search_query', '').strip()
-#         from_date = request.form.get('from_date', current_date)
-#         to_date = request.form.get('to_date', current_date)
-#         department_id = request.form.get('department_id', '').strip()
-#         query = """
-#             SELECT doctors.last_name, doctors.first_name, doctors.second_name, schedule.date,
-#                    schedule.start_time, schedule.end_time, schedule._id
-#             FROM doctors JOIN schedule ON doctors._id = schedule.doctor_id """
-#         params = []
-#         if search_query:
-#             query += """
-#                         AND (doctors.first_name ILIKE %s OR doctors.second_name ILIKE %s OR doctors.last_name ILIKE %s)
-#                     """
-#             params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
-#         query += """
-#                     AND  schedule.date>= %s
-#                     AND schedule.date <= %s
-#                 """
-#         params.extend([from_date, to_date])
-#         if department_id:
-#             query += " AND department_id = %s"
-#             params.append(department_id)
-#         query += " ORDER BY doctors.last_name ASC"
-#         cursor.execute(query, params)
-#         result = cursor.fetchall()
-#         cursor.close()
-#         return render_template('scheduleList.html', doctors=result, current_date=current_date, departments=departments)
-#
 @app.route('/admin/scheduleList', methods=['GET', 'POST'])
 @login_required
 @role_required(['admin'])
@@ -1129,6 +1072,84 @@ def admin_scheduleList():
         cursor.close()
         return render_template('scheduleList.html', doctors=result, current_date=current_date, departments=departments)
 
+@app.route('/admin/delete_schedule', methods=['POST'])
+@login_required
+@role_required(['admin'])
+def delete_schedule():
+    selected_values = request.json.get('values')
+    print(selected_values)
+    cursor = conn.cursor()
+    for value in selected_values:
+        print(value)
+        cursor.execute("DELETE FROM schedules WHERE _id = %s", (value,))
+    conn.commit()
+    cursor.close()
+    return {"status": "success", "message": "Selected schedules deleted"}
+
+
+@app.route('/admin/delete_appointment', methods=['POST'])
+@login_required
+@role_required(['admin'])
+def delete_appointment():
+    selected_values = request.json.get('values')
+    print(selected_values)
+    cursor = conn.cursor()
+    for value in selected_values:
+        print(value)
+        cursor.execute("DELETE FROM talons WHERE _id = %s", (value,))
+    conn.commit()
+    cursor.close()
+    return {"status": "success", "message": "Selected schedules deleted"}
+
+@app.route('/admin/delete_leave', methods=['POST'])
+@login_required
+@role_required(['admin'])
+def delete_leave():
+    selected_values = request.json.get('values')
+    print(selected_values)
+    cursor = conn.cursor()
+    for value in selected_values:
+        print(value)
+        cursor.execute("DELETE FROM doctorleaves WHERE _id = %s", (value,))
+    conn.commit()
+    cursor.close()
+    return {"status": "success", "message": "Selected schedules deleted"}
+
+@app.route('/admin/delete_doctors', methods=['POST'])
+@login_required
+@role_required(['admin'])
+def delete_doctor():
+    selected_values = request.json.get('values')
+    print(selected_values)
+    cursor = conn.cursor()
+    for value in selected_values:
+        print(value)
+        cursor.execute("""
+                   DELETE FROM users
+                   WHERE _id = (SELECT user_id FROM doctors WHERE _id = %s)
+               """, (value,))
+        cursor.execute("DELETE FROM doctors WHERE _id = %s", (value,))
+    conn.commit()
+    cursor.close()
+    return {"status": "success", "message": "Selected schedules deleted"}
+
+@app.route('/admin/delete_patient', methods=['POST'])
+@login_required
+@role_required(['admin'])
+def delete_patient():
+    selected_values = request.json.get('values')
+    print(selected_values)
+    cursor = conn.cursor()
+    for value in selected_values:
+        print(value)
+        cursor.execute("""
+                   DELETE FROM users
+                   WHERE _id = (SELECT user_id FROM patients WHERE _id = %s)
+               """, (value,))
+        cursor.execute("DELETE FROM doctors WHERE _id = %s", (value,))
+    conn.commit()
+    cursor.close()
+    return {"status": "success", "message": "Selected schedules deleted"}
 
 # @app.route('/admin/addSchedule', methods=['GET', 'POST'])
 # @app.route('/admin/addSchedule/<int:schedule_id>', methods=['GET', 'POST'])
@@ -1635,8 +1656,9 @@ def admin_addPatient(patient_id=None):
                            (country, city, house, flat, street))
             address_id = cursor.fetchone()
 
+            decrypted_password = hashlib.sha256(("123" + salt).encode()).hexdigest()
             cursor.execute("""INSERT INTO users(login, password, role_id)
-                                        VALUES (%s, %s, %s)""", (email, "", 1))
+                                        VALUES (%s, %s, %s)""", (email, decrypted_password, 1))
             conn.commit()
 
             cursor.execute("""SELECT users._id FROM users 
@@ -1823,8 +1845,9 @@ def admin_addDoctor(doctor_id=None):
                 WHERE university=%s AND faculty=%s AND specialization=%s""", (university, faculty, specialization))
                 education_id = cursor.fetchone()
 
+            decrypted_password = hashlib.sha256(("123" + salt).encode()).hexdigest()
             cursor.execute("""INSERT INTO users(login, password, role_id)
-                            VALUES (%s, %s, %s)""", (email, "1", 2))
+                            VALUES (%s, %s, %s)""", (email, decrypted_password, 2))
             conn.commit()
 
             cursor.execute("""SELECT users._id FROM users 

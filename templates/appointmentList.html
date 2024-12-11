@@ -234,6 +234,11 @@
             color: white;
         }
 
+        .delete-btn {
+            background: #fd6666;
+            color: white;
+        }
+
         .refresh-btn {
             background: white;
             border: 1px solid var(--border-color);
@@ -279,7 +284,7 @@
             display: inline-block;
         }
 
-       .status-approved {
+        .status-approved {
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 12px;
@@ -308,6 +313,7 @@
             background: rgba(255, 92, 117, 0.1);
             color: var(--danger-color);
         }
+
         .status-new {
             background: rgba(142, 68, 173, 0.1);
             color: var(--new-color);
@@ -462,11 +468,11 @@
         </div>
         <div class="menu-item">
             <i class="fas fa-th-large"></i>
-            <a href="/admin/adminDashboard">Dashboard</a>
+            <a href="/admin/dashboard">Dashboard</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-user-md"></i>
-            <a href="doctorsList.html">Doctors</a>
+            <a href="/admin/doctorsList">Doctors</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-users"></i>
@@ -494,7 +500,7 @@
         </div>
         <form method="POST" action="/admin/appointmentList">
             <div class="filters" style="display: flex; gap: 15px; align-items: center;">
-                 <input type="text" name="search_query" class="filter-input" placeholder="Search by doctor name">
+                <input type="text" name="search_query" class="filter-input" placeholder="Search by doctor name">
                 <input type="date" id="date-from" class="filter-input" name="from_date" value="{{ current_date }}">
                 <input type="date" id="date-to" class="filter-input" name="from_date" value="{{ current_date }}">
                 <select class="filter-input">
@@ -520,6 +526,8 @@
 
         <!-- Table -->
         <div class="table-container">
+            <button class="action-btn delete-btn" style="margin-left: 84%" onclick="deleteSelected()">Delete
+            </button>
             <table>
                 <thead>
                 <tr>
@@ -547,7 +555,7 @@
                                 <span class="status-{{ appointment[8] | lower }}">{{ appointment[8] }}</span>
                             </td>
                             <td>{{ appointment[9] }}</td>
-                        <td>
+                            <td>
                                 <button class="download-btn"
                                         style="background-color: transparent; border-color: transparent"
                                         onclick="redirectToPage('{{ appointment[10] }}')">
@@ -608,6 +616,34 @@
 
     function redirectToPage(appointmentId) {
         window.location.href = `/admin/addAppointment/${appointmentId}`;
+    }
+
+    function deleteSelected() {
+        const selectedRows = document.getElementsByName('selectedRows');
+        const selectedValues = [];
+        for (let i = 0; i < selectedRows.length; i++) {
+            if (selectedRows[i].checked) {
+                selectedValues.push(selectedRows[i].value);
+            }
+        }
+
+        fetch('/admin/delete_appointment', {
+            method: 'POST',
+            body: JSON.stringify({values: selectedValues}),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (data.status === 'success') {
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
     }
 </script>
 </body>

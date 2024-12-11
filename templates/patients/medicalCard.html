@@ -167,10 +167,6 @@
 <div class="sidebar">
     <div class="doctor-profile">
         <img src="https://picsum.photos/200/200?random=1" alt="Doctor Profile">
-        <div class="doctor-info">
-            <h3>Dr. Darren Elder</h3>
-            <p>BDS, MDS - Oral & Maxillofacial Surgery</p>
-        </div>
     </div>
     <div class="nav-menu">
         <a href='/patientDashboard' class="nav-item">Dashboard</a>
@@ -219,21 +215,6 @@
     </div>
 </div>
 <script>
-    // Функция для поиска пациентов
-    document.getElementById('searchInput').addEventListener('input', function () {
-        const searchValue = this.value.toLowerCase();
-        const rows = document.querySelectorAll('#recordsTable tbody tr');
-        let hasRecords = false;
-
-        rows.forEach(row => {
-            const name = row.cells[1].textContent.toLowerCase();
-            const isVisible = name.includes(searchValue);
-            row.style.display = isVisible ? '' : 'none';
-            if (isVisible) hasRecords = true;
-        });
-
-        document.getElementById('noRecords').style.display = hasRecords ? 'none' : '';
-    });
 
 </script>
 </body>

@@ -308,39 +308,6 @@
             margin-bottom: 30px;
         }
 
-        .flatpickr-calendar {
-            background-color: #565fa5; /* Темный фон */
-            color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-        }
-
-        .flatpickr-day,
-        .flatpickr-weekday {
-            color: white;
-        }
-
-        .flatpickr-day:hover {
-            background-color: rgba(108, 135, 255, 0.3);
-            color: white;
-        }
-
-        .flatpickr-day.today {
-            background-color: #6c87ff;
-            color: white;
-        }
-
-        .flatpickr-month {
-            background-color: #262626;
-        }
-
-        .flatpickr-prev-month, .flatpickr-next-month {
-            color: #6c87ff;
-        }
-
-        .flatpickr-current-month {
-            color: #6c87ff;
-        }
     </style>
 </head>
 <body>
@@ -353,27 +320,27 @@
         </div>
         <div class="menu-item">
             <i class="fas fa-th-large"></i>
-            <a href="adminDashboard.html">Dashboard</a>
+            <a href="/admin/dashboard">Dashboard</a>
         </div>
-        <div class="menu-item active">
+        <div class="menu-item  active">
             <i class="fas fa-user-md"></i>
-            <a href="doctorsList.html">Doctors</a>
+            <a href="/admin/doctorsList">Doctors</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-users"></i>
-            <a href="patientsList.html">Patients</a>
+            <a href="/admin/patientsList">Patients</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-calendar-alt"></i>
-            <a href="appointmentList.html">Appointments</a>
+            <a href="/admin/appointmentList">Appointments</a>
         </div>
         <div class="menu-item">
             <i class="far fa-clock"></i>
-            <a href="scheduleList.html">Doctor Schedule</a>
+            <a href="/admin/scheduleList">Doctor Schedule</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-hospital"></i>
-            <a href="doctorLeaves.html">Doctor Leaves</a>
+            <a href="/admin/doctorLeaves">Doctor Leaves</a>
         </div>
     </div>
 
@@ -528,5 +495,16 @@
         </div>
     </div>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        flatpickr('#dob', {
+            minDate: "today",
+            dateFormat: "Y-m-d",
+            onChange: (selectedDates, dateStr) => {
+                showTimeSlots(dateStr);
+            }
+        });
+    });
+</script>
 </body>
 </html>

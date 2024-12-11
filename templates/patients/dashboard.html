@@ -89,6 +89,7 @@
             color: white;
         }
 
+
         :root {
             --primary-color: #4a90e2;
             --secondary-color: #e91e63;
@@ -201,6 +202,24 @@
             color: #525252;
             border-bottom: 1px solid var(--border-color);
             vertical-align: middle;
+        }
+
+        .status-btn {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .accept {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .cancel {
+            background: #a4b4ff;
+            color: white;
         }
 
         .status-badge {
@@ -320,15 +339,13 @@
 <div class="sidebar">
     <div class="doctor-profile">
         <img src="https://picsum.photos/200/200?random=1" alt="Doctor Profile">
-        <div class="doctor-info">
-            <h3>Dr. Darren Elder</h3>
-        </div>
     </div>
     <div class="nav-menu">
         <a href='/patientDashboard' class="nav-item active">Dashboard</a>
         <a href='/myMedicalCard' class="nav-item">My medical card</a>
         <a href="/findAppointment" class="nav-item">Find appointment</a>
         <a href='/patientProfile' class="nav-item">Profile Settings</a>
+        <a href='/' class="nav-item logout" style="background: #ffffff; color: #636363;">Logout</a>
     </div>
 </div>
 <div class="dashboard-container">
@@ -372,7 +389,7 @@
     </div>
 
     <div id="appointments" class="tab-content" style="display: none;">
-        <h3>Recent Appointments</h3>
+        <h3>Future Appointments</h3>
         <div class="table-responsive">
             <table class="table">
                 <thead>
@@ -392,6 +409,12 @@
                         <td>{{ appointment[3] }}</td>
                         <td>{{ appointment[4] }}</td>
                         <td><span class="status-{{ appointment[5] | lower }}">{{ appointment[5] }}</span></td>
+                        <td>
+                            <form method="POST" style="display: inline;">
+                                <input type="hidden" name="appointment_id" value="{{ appointment[6] }}">
+                                <button class="status-btn cancel" name="action" value="cancel">Cancel</button>
+                            </form>
+                        </td>
                     </tr>
                 {% endfor %}
                 </tbody>

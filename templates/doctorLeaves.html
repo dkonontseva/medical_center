@@ -211,6 +211,11 @@
             color: white;
         }
 
+        .delete-btn {
+            background: #fd6666;
+            color: white;
+        }
+
         .refresh-btn {
             background: white;
             border: 1px solid var(--border-color);
@@ -409,7 +414,7 @@
         </div>
         <div class="menu-item">
             <i class="fas fa-th-large"></i>
-            <a href="/admin/adminDashboard">Dashboard</a>
+            <a href="/admin/dashboard">Dashboard</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-user-md"></i>
@@ -472,7 +477,8 @@
         </div>
 
         <div class="table-container">
-
+            <button class="action-btn delete-btn" style="margin-left: 84%" onclick="deleteSelected()">Delete
+            </button>
             <table>
                 <thead>
                 <tr>
@@ -558,6 +564,34 @@
 
     function editLeave(leaveId) {
         window.location.href = `/admin/addLeave/${leaveId}`;
+    }
+
+        function deleteSelected() {
+        const selectedRows = document.getElementsByName('selectedRows');
+        const selectedValues = [];
+        for (let i = 0; i < selectedRows.length; i++) {
+            if (selectedRows[i].checked) {
+                selectedValues.push(selectedRows[i].value);
+            }
+        }
+
+        fetch('/admin/delete_leave', {
+            method: 'POST',
+            body: JSON.stringify({values: selectedValues}),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (data.status === 'success') {
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
     }
 </script>
 </body>
