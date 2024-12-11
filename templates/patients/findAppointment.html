@@ -125,6 +125,14 @@
             width: 200px;
         }
 
+        .profile-container {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 8px 8px 16px #e6e6e6, -8px -8px 16px #ffffff;
+            margin-top: 30px;
+        }
+
         .tickets-section {
             background: var(--white);
             padding: 25px;
@@ -185,12 +193,19 @@
             cursor: not-allowed;
         }
 
+        .ticket-card.selected-slot {
+            background-color: rgba(156, 200, 255, 0.6);
+            color: white;
+            font-weight: bold;
+        }
+
         .filter-section {
             display: flex;
             gap: 15px;
             margin-bottom: 20px;
             margin-top: 30px;
         }
+
 
         .filter-btn {
             padding: 8px 16px;
@@ -208,47 +223,6 @@
             color: var(--white);
         }
 
-
-        .date-picker {
-            padding: 8px 16px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            margin-right: 15px;
-        }
-
-        .flatpickr-calendar {
-            background-color: #565fa5; /* Темный фон */
-            color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-        }
-
-        .flatpickr-day,
-        .flatpickr-weekday {
-            color: white;
-        }
-
-        .flatpickr-day:hover {
-            background-color: rgba(108, 135, 255, 0.3);
-            color: white;
-        }
-
-        .flatpickr-day.today {
-            background-color: #6c87ff;
-            color: white;
-        }
-
-        .flatpickr-month {
-            background-color: #262626;
-        }
-
-        .flatpickr-prev-month, .flatpickr-next-month {
-            color: #6c87ff;
-        }
-
-        .flatpickr-current-month {
-            color: #6c87ff;
-        }
 
         .slots-grid {
             display: grid;
@@ -314,143 +288,163 @@
 
 <div class="main-content">
     <h1>Find and Book Appointment</h1>
-
-    <form method="POST" action="/findAppointment">
+    <form id="searchForm" method="GET">
         <div class="filter-section">
+
             <label for="date">Date</label>
-            <input type="date" id="date" class="form-control" value="{{ request.args.get('date', '') }}" required>
-            <input type="text" id="doctorSearch" class="search-input" placeholder="Search doctor by name...">
-            <select id="departmentFilter" class="department-filter">
+            <input type="date" id="date" class="search-input" name="date" value="{{ date }}" required>
+
+            <input type="text" id="doctorSearch" class="search-input" name="doctor_search"
+                   placeholder="Search doctor by name...">
+
+            <select id="departmentFilter" class="department-filter" name="department">
                 <option value="">Select Department</option>
                 {% for department in departments %}
-                    <option value="{{ department[1] }}">{{ department[1] }}</option>
+                    <option value="{{ department[1] }}"
+                            {% if request.args.get('department') == department[1] %}selected{% endif %}>
+                        {{ department[1] }}
+                    </option>
                 {% endfor %}
             </select>
-            <button type="button" class="search-btn">Search</button>
+
+            <button type="button" id="searchButton" class="search-btn">Search</button>
         </div>
     </form>
-
-    <div id="doctors-section">
-        <h2>Available Doctors</h2>
-        <div id="doctors-grid" class="tickets-grid">
-            {% if doctor_list %}
-                {% for doctor in doctor_list %}
-                    <div class="ticket-card"
-                         onclick="loadAvailableSlots({{ doctor[0] }}, '{{ doctor[2] }} {{ doctor[1] }}')">
-                        <div class="ticket-time">Dr. {{ doctor[2] }} {{ doctor[1] }}</div>
-                        <div class="ticket-info">
-                            <p>Department: {{ doctor[4] }}</p>
-                            <p>Phone: {{ doctor[3] }}</p>
+    <div class="profile-container">
+        <div id="doctors-section">
+            <h2>Available Doctors</h2>
+            <div id="doctors-grid" class="tickets-grid">
+                {% if doctor_list %}
+                    {% for doctor in doctor_list %}
+                        <div class="ticket-card"
+                             onclick="loadAvailableSlots({{ doctor[0] }}, '{{ doctor[2] }} {{ doctor[1] }}')">
+                            <div class="ticket-time">Dr. {{ doctor[2] }} {{ doctor[1] }}</div>
+                            <div class="ticket-info">
+                                <p>Department: {{ doctor[4] }}</p>
+                                <p>Phone: {{ doctor[3] }}</p>
+                            </div>
                         </div>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <p>No doctors available for the selected date.</p>
-            {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <p>No doctors available for the selected date.</p>
+                {% endif %}
+            </div>
         </div>
-    </div>
 
-    <div id="appointment-section" style="display: none;">
-        <h2>Available Slots for <span id="selected-doctor-name"></span></h2>
-        <div id="available-times" class="slots-grid">
-            {% if available_slots %}
-                {% for slot in available_slots %}
-                    <div class="ticket-card available" onclick="selectSlot('{{ slot.date }}', '{{ slot.time }}')">
-                        <div class="ticket-time">{{ slot.date }} - {{ slot.time }}</div>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <p>No available slots for this doctor.</p>
-            {% endif %}
+        <div id="appointment-section" style="display: none;">
+            <h2>Available Slots for <span id="selected-doctor-name"></span></h2>
+            <div id="available-times" class="slots-grid"></div>
+            <button id="book-button" style="display: none; margin-top: 20px;" class="search-btn"
+                    onclick="bookSelectedAppointment()">Book Appointment
+            </button>
+            <button onclick="goBack()" style="margin-top: 20px;" class="search-btn">Back to Doctors</button>
         </div>
-        <button id="book-button" style="display: none; margin-top: 20px;" class="search-btn"
-                onclick="bookSelectedAppointment()">Book Appointment
-        </button>
-        <button onclick="goBack()" style="margin-top: 20px;" class="search-btn">Back to Doctors</button>
     </div>
 </div>
-
 <script>
-    let selectedDoctorId = null;
-    let selectedSlot = {};
+    // Добавляем обработчик для кнопки поиска
+    document.getElementById('searchButton').addEventListener('click', function () {
+        const date = document.getElementById('date').value;
+        const doctorSearch = document.getElementById('doctorSearch').value;
+        const department = document.getElementById('departmentFilter').value;
 
-    function loadDoctors() {
-        const date = document.getElementById("date").value;
-        const department = document.getElementById("departmentFilter").value;
-        const search = document.getElementById("doctorSearch").value;
-
-        fetch(`/findAppointment?date=${date}&department=${department}&search=${search}`)
+        // Формируем запрос к серверу
+        fetch(`/findAppointment?date=${date}&doctor_search=${doctorSearch}&department=${department}`)
             .then(response => response.text())
             .then(html => {
-                document.getElementById("doctors-grid").innerHTML = html;
+                // Извлекаем обновленный список врачей из ответа
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const updatedDoctorsGrid = doc.getElementById('doctors-grid');
+
+                // Обновляем текущую секцию врачей
+                document.getElementById('doctors-grid').innerHTML = updatedDoctorsGrid.innerHTML;
             })
-            .catch(error => console.error("Error loading doctors:", error));
-    }
+            .catch(error => console.error('Error updating doctors:', error));
+    });
 
     function loadAvailableSlots(doctorId, doctorName) {
-        const date = document.getElementById("date").value;
+        selectedDoctorId = doctorId; // Устанавливаем выбранного врача
+        const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
+        document.getElementById('selected-doctor-name').innerText = doctorName;
+        document.getElementById('doctors-section').style.display = 'none';
+        document.getElementById('appointment-section').style.display = 'block';
 
         fetch(`/findAppointment/slots?doctor_id=${doctorId}&date=${date}`)
             .then(response => response.json())
             .then(data => {
-                const availableTimes = document.getElementById("available-times");
-                availableTimes.innerHTML = "";
+                const slotsGrid = document.getElementById('available-times');
+                slotsGrid.innerHTML = '';
 
-                if (data.length === 0) {
-                    availableTimes.innerHTML = "<p>No available slots for this doctor.</p>";
-                } else {
-                    data.forEach(slot => {
-                        const slotCard = document.createElement("div");
-                        slotCard.className = "ticket-card available";
-                        slotCard.textContent = `${slot.date} - ${slot.time}`;
-                        slotCard.addEventListener("click", () => selectSlot(slot.date, slot.time));
-                        availableTimes.appendChild(slotCard);
+                if (data.available_slots.length > 0) {
+                    data.available_slots.forEach(slot => {
+                        const slotCard = document.createElement('div');
+                        slotCard.classList.add('ticket-card', 'available');
+                        slotCard.onclick = () => selectSlot(slot); // Передаем слот для выбора
+                        slotCard.innerHTML = `<div class="ticket-time">${slot}</div>`;
+                        slotsGrid.appendChild(slotCard);
                     });
+                } else {
+                    slotsGrid.innerHTML = '<p>No available slots for this doctor.</p>';
                 }
-
-                document.getElementById("doctors-section").style.display = "none";
-                document.getElementById("appointment-section").style.display = "block";
-                document.getElementById("selected-doctor-name").textContent = doctorName;
-                selectedDoctorId = doctorId;
-            })
-            .catch(error => console.error("Error loading slots:", error));
+            });
     }
 
-    function selectSlot(date, time) {
-        selectedSlot = {date, time};
-        document.getElementById("book-button").style.display = "block";
-    }
 
-    function bookSelectedAppointment() {
-        if (!selectedSlot.date || !selectedSlot.time || !selectedDoctorId) {
-            alert("Please select a slot before booking.");
-            return;
+    function selectSlot(time) {
+        selectedTime = time;
+
+        // Убираем выделение с ранее выбранной ячейки
+        const previouslySelected = document.querySelector('.ticket-card.selected-slot');
+        if (previouslySelected) {
+            previouslySelected.classList.remove('selected-slot');
         }
 
-        fetch("/bookAppointment", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                doctor_id: selectedDoctorId,
-                date: selectedSlot.date,
-                time: selectedSlot.time
-            })
+        // Находим и выделяем текущую ячейку
+        const slotsGrid = document.getElementById('available-times');
+        const slotCards = slotsGrid.getElementsByClassName('ticket-card');
+        for (const slotCard of slotCards) {
+            if (slotCard.textContent.trim() === time) {
+                slotCard.classList.add('selected-slot');
+            }
+        }
+
+        // Обновляем текст кнопки для подтверждения
+        const bookButton = document.getElementById('book-button');
+        bookButton.style.display = 'block';
+        bookButton.textContent = `Book Appointment for ${time}`;
+    }
+
+
+    function bookSelectedAppointment() {
+        const doctorId = selectedDoctorId;
+        const date = document.getElementById('date').value;
+        const time = selectedTime;
+
+        fetch('/bookAppointment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({doctor_id: doctorId, date: date, time: time})
         })
             .then(response => response.json())
-            .then(data => {
-                alert(data.message || "Appointment booked successfully!");
-                goBack();
-            })
-            .catch(error => console.error("Error booking appointment:", error));
+            .then(data => alert(data.message));
     }
 
     function goBack() {
-        document.getElementById("appointment-section").style.display = "none";
-        document.getElementById("doctors-section").style.display = "block";
+        document.getElementById('appointment-section').style.display = 'none';
+        document.getElementById('doctors-section').style.display = 'block';
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-        document.getElementById("date").valueAsDate = new Date();
+    document.addEventListener('DOMContentLoaded', () => {
+        flatpickr('#date', {
+            minDate: "today",
+            dateFormat: "Y-m-d",
+            onChange: (selectedDates, dateStr) => {
+                showTimeSlots(dateStr);
+            }
+        });
     });
 </script>
 

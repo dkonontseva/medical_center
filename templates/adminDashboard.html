@@ -16,6 +16,7 @@
             box-sizing: border-box;
             font-family: 'Poppins', sans-serif;
         }
+
         :root {
             --primary-color: #4a90e2;
             --background-color: #F3F6F9;
@@ -122,7 +123,7 @@
             margin-left: 280px;
             padding: 30px;
             flex: 1;
-            width: 1620px;
+            width: 1580px;
         }
 
         .stats-container {
@@ -218,8 +219,10 @@
 
         .chart-container {
             position: relative;
-            height: 300px;
-            width: 100%;
+            width: 90%;
+            max-width: 800px;
+            height: 400px;
+            margin: 0 auto;
         }
 
     </style>
@@ -264,90 +267,51 @@
 
         <div class="stats-container">
             <div class="stat-card">
-                <h2>35</h2>
+                <h2>{{ total_doctors }}</h2>
                 <p>Doctors</p>
             </div>
             <div class="stat-card">
-                <h2>1500</h2>
+                <h2>{{ total_patients }}</h2>
                 <p>Patients</p>
             </div>
             <div class="stat-card">
-                <h2>120</h2>
+                <h2>{{ today_appointments }}</h2>
                 <p>Today's Appointments</p>
             </div>
             <div class="stat-card">
-                <h2>98%</h2>
-                <p>Patient Satisfaction</p>
+                <h2>{{ all_appointments }}</h2>
+                <p>All Appointments</p>
             </div>
         </div>
 
         <div class="dashboard-grid">
-            <!-- Appointments Chart -->
             <div class="card animated">
-                <h3>Appointment History</h3>
+                <h3>Appointments by Month</h3>
                 <div class="chart-container">
-                    <canvas id="appointmentChart"></canvas>
+                    <canvas id="visitsByMonthChart"></canvas>
                 </div>
             </div>
 
-            <!-- Medical Status -->
             <div class="card animated">
-                <h3>Health Status</h3>
+                <h3>Visits by Departments</h3>
                 <div class="chart-container">
-                    <canvas id="healthChart"></canvas>
+                    <canvas id="visitsByDepartmentChart"></canvas>
                 </div>
             </div>
-        </div>
-
-        <div class="management-section">
-            <h2>Pending Staff Requests</h2>
-            <table>
-                <thead>
-                <tr>
-                    <th>Request ID</th>
-                    <th>Staff Member</th>
-                    <th>Department</th>
-                    <th>Type</th>
-                    <th>Action</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <td>#REQ001</td>
-                    <td>John Smith</td>
-                    <td>Cardiology</td>
-                    <td>Leave Request</td>
-                    <td>
-                        <button class="action-btn approve">Approve</button>
-                        <button class="action-btn reject">Reject</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>#REQ002</td>
-                    <td>Jane Doe</td>
-                    <td>Radiology</td>
-                    <td>Shift Change</td>
-                    <td>
-                        <button class="action-btn approve">Approve</button>
-                        <button class="action-btn reject">Reject</button>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
         </div>
     </div>
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Appointment History Chart
-        const appointmentCtx = document.getElementById('appointmentChart').getContext('2d');
-        new Chart(appointmentCtx, {
+        const visitsByMonthCtx = document.getElementById('visitsByMonthChart').getContext('2d');
+
+        new Chart(visitsByMonthCtx, {
             type: 'line',
             data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
                 datasets: [{
-                    label: 'Appointments',
-                    data: [4, 3, 5, 2, 4, 6],
+                    label: 'Visits by Month',
+                    data: [{{ visits_by_month | join(', ') }}],
                     borderColor: '#2196f3',
                     tension: 0.4,
                     fill: false
@@ -363,16 +327,19 @@
                 }
             }
         });
+    });
 
-        // Health Status Chart
-        const healthCtx = document.getElementById('healthChart').getContext('2d');
-        new Chart(healthCtx, {
+    // Health Status Chart
+    document.addEventListener('DOMContentLoaded', function () {
+        // Visits by Department Radar Chart
+        const visitsByDepartmentCtx = document.getElementById('visitsByDepartmentChart').getContext('2d');
+        new Chart(visitsByDepartmentCtx, {
             type: 'radar',
             data: {
-                labels: ['Blood Pressure', 'Heart Rate', 'Cholesterol', 'Blood Sugar', 'BMI'],
+                labels: [{% for dept in visits_by_department %}'{{ dept[0] }}'{% if not loop.last %}, {% endif %}{% endfor %}],
                 datasets: [{
-                    label: 'Current',
-                    data: [85, 78, 92, 88, 76],
+                    label: 'Visits by Department',
+                    data: [{{ visits_by_department | map(attribute=1) | join(', ') }}],
                     backgroundColor: 'rgba(33, 150, 243, 0.2)',
                     borderColor: '#2196f3',
                     pointBackgroundColor: '#2196f3'
@@ -389,7 +356,8 @@
                 }
             }
         });
-    });
+    })
 </script>
+
 </body>
 </html>

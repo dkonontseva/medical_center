@@ -413,7 +413,7 @@
         </div>
         <div class="menu-item">
             <i class="fas fa-user-md"></i>
-            <a href="doctorsList.html">Doctors</a>
+            <a href="/admin/doctorsList">Doctors</a>
         </div>
         <div class="menu-item">
             <i class="fas fa-users"></i>
@@ -443,12 +443,13 @@
             <div class="filters" style="display: flex; gap: 15px; align-items: center;">
                 <input type="text" name="search_query" class="filter-input" placeholder="Search by doctor name">
                 <select name="leave_type" class="filter-input">
-                    <option value="Medical Leave">Medical Leave</option>
+                    <option value="">Leave Type</option>
+                    <option value="Medical Reason">Medical Reason</option>
                     <option value="Casual Leave">Casual Leave</option>
-                    <option value="Casual Leave">Family Reason</option>
+                    <option value="Family Reason">Family Reason</option>
                 </select>
-                <input type="date" name="from_date" id="date" class="filter-input" value="{{ current_date }}">
-                <input type="date" name="to_date" id="date" class="filter-input" value="{{ current_date }}">
+                <input type="date" name="from_date" id="date" class="filter-input" value="">
+                <input type="date" name="to_date" id="date" class="filter-input" value="">
                 <select name="status" class="filter-input">
                     <option value="">Leave Status</option>
                     <option value="Approved">Approved</option>
@@ -526,10 +527,14 @@
 </div>
 
 <script>
-    flatpickr("#date", {
-        dateFormat: "d-m-y", // Устанавливаем формат даты
-        defaultDate: new Date(), // Устанавливаем текущую дату
-        static: true // Стационарное отображение календаря
+    document.addEventListener('DOMContentLoaded', () => {
+        flatpickr('#date', {
+            minDate: "today",
+            dateFormat: "Y-m-d",
+            onChange: (selectedDates, dateStr) => {
+                showTimeSlots(dateStr);
+            }
+        });
     });
     // Интерактивность меню
     document.querySelectorAll('.menu-item').forEach(item => {

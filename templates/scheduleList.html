@@ -509,10 +509,14 @@
 </div>
 
 <script>
-    flatpickr("#date", {
-        dateFormat: "d-m-y", // Устанавливаем формат даты
-        defaultDate: new Date(), // Устанавливаем текущую дату
-        static: true // Стационарное отображение календаря
+    document.addEventListener('DOMContentLoaded', () => {
+        flatpickr('#date', {
+            minDate: "today",
+            dateFormat: "Y-m-d",
+            onChange: (selectedDates, dateStr) => {
+                showTimeSlots(dateStr);
+            }
+        });
     });
     // Интерактивность меню
     document.querySelectorAll('.menu-item').forEach(item => {

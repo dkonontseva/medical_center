@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
+    <style>
+        /* Стилизация страницы */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #272b41;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: #ffffff;
+            padding: 20px;
+            height: 100vh;
+            position: fixed;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .doctor-profile {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .doctor-profile img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 8px 8px 16px #e6e6e6, -8px -8px 16px #ffffff;
+        }
+
+        .doctor-info h3 {
+            color: #272b41;
+            font-size: 18px;
+        }
+
+        .doctor-info p {
+            color: #757575;
+            font-size: 14px;
+        }
+
+        .nav-menu .nav-item {
+            padding: 12px 20px;
+            margin: 8px 0;
+            border-radius: 10px;
+            color: #272b41;
+            display: flex;
+            align-items: center;
+            box-shadow: 4px 4px 8px #e6e6e6, -4px -4px 8px #ffffff;
+            text-decoration: none;
+        }
+
+        .nav-item.active {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .nav-item:hover {
+            background: rgba(74, 144, 226, 0.36);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 30px;
+            flex: 1;
+            width: 1620px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .header h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2E2E3A;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background: white;
+            border-radius: 8px;
+            padding: 8px 15px;
+            width: 280px;
+            border: 1px solid #EBEEF6;
+        }
+
+        .search-bar i {
+            color: #8A92A6;
+            font-size: 16px;
+        }
+
+        .search-bar input {
+            border: none;
+            outline: none;
+            width: 100%;
+            margin-left: 10px;
+            font-size: 14px;
+            color: #525252;
+        }
+
+        /* Filter Section */
+        .filters {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filter-input {
+            background: white;
+            border-radius: 8px;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            outline: none;
+            font-size: 14px;
+            color: #525252;
+        }
+
+        .filter-input::placeholder {
+            color: #8A92A6;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .action-btn {
+            padding: 8px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .add-btn {
+            background: var(--primary-color);
+        }
+
+        .refresh-btn {
+            background: white;
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+        }
+
+        /* Table Styles */
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        th {
+            font-weight: 600;
+            color: #525252;
+            font-size: 13px;
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+        }
+
+        td {
+            padding: 15px;
+            font-size: 14px;
+            color: #525252;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .status-approved {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+            background: rgba(43, 193, 85, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-pending {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+            background: rgba(255, 167, 85, 0.1);
+            color: var(--warning-color);
+        }
+
+        .status-declined {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+            background: rgba(255, 92, 117, 0.1);
+            color: var(--danger-color);
+        }
+
+        .status-new {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+            background: rgba(142, 68, 173, 0.1);
+            color: var(--new-color);
+        }
+
+        .avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            margin-right: 12px;
+            object-fit: cover;
+        }
+
+        .employee-cell {
+            display: flex;
+            align-items: center;
+        }
+
+        .patient-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 20px;
+            gap: 8px;
+        }
+
+        .page-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            color: #525252;
+        }
+
+        .page-btn.active {
+            background: #4a90e2;
+            color: white;
+            border: none;
+        }
+
+
+        .submit-btn {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            border: none;
+            cursor: pointer;
+            background: #4a90e2;
+            color: white;
+        }
+
+        .search-button {
+            background: var(--primary-color);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<div class="sidebar">
+    <div class="doctor-profile">
+        <img src="https://picsum.photos/200/200?random=1" alt="Doctor Profile">
+        <div class="doctor-info">
+            <h3>Dr. Darren Elder</h3>
+            <p>BDS, MDS - Oral & Maxillofacial Surgery</p>
+        </div>
+    </div>
+    <div class="nav-menu">
+        <a href="dashboard.html" class="nav-item">Dashboard</a>
+        <a href="myLeaves.html" class="nav-item active">My Patients</a>
+        <a href="patientsCards.html" class="nav-item">Patients' cards</a>
+        <a href="profile.html" class="nav-item">Profile Settings</a>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="header">
+        <h2>Leave Request</h2>
+    </div>
+
+    <form method="POST" action="/doctor/myLeaves">
+        <div class="filters" style="display: flex; gap: 15px; align-items: center;">
+            <input type="text" name="search_query" class="filter-input" placeholder="Search by reason or type">
+            <select name="leave_type" class="filter-input">
+                <option value="">All Leave Types</option>
+                <option value="Medical Reason">Medical Reason</option>
+                <option value="Casual Leave">Casual Leave</option>
+                <option value="Family Reason">Family Reason</option>
+            </select>
+            <input type="date" name="from_date" id="date" class="filter-input" value="">
+            <input type="date" name="to_date" id="date" class="filter-input" value="">
+            <select name="status" class="filter-input">
+                <option value="">Leave Status</option>
+                <option value="Approved">Approved</option>
+                <option value="Pending">Pending</option>
+                <option value="Declined">Declined</option>
+            </select>
+            <button type="submit" class="search-button">Search</button>
+        </div>
+    </form>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div class="action-buttons">
+            <button class="action-btn add-btn" onclick="window.location.href = '/doctor/addLeave'">
+                <i class="fas fa-plus"></i>
+                Add New
+            </button>
+            <button class="action-btn refresh-btn" onclick="window.location.href = '/doctor/myLeaves'">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="table-container">
+
+        <table>
+            <thead>
+            <tr>
+                <th><input type="hidden"></th>
+                <th>Leave Type</th>
+                <th>From</th>
+                <th>To</th>
+                <th>No of days</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Action</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                {% for doctorLeave in doctorLeaves %}
+                    <tr>
+                        <td><input type="checkbox" name="selectedRows" value="{{ doctorLeave[6] }}"></td>
+                        <td>{{ doctorLeave[0] }}</td>
+                        <td>{{ doctorLeave[1] }}</td>
+                        <td>{{ doctorLeave[2] }}</td>
+                        <td>{{ doctorLeave[5] }}</td>
+                        <td>{{ doctorLeave[3] }}</td>
+                        <td>
+                            <span class="status-{{ doctorLeave[4] | lower }}">{{ doctorLeave[4] }}</span>
+                        </td>
+                        <td>
+                            <button class="download-btn"
+                                    style="background-color: transparent; border-color: transparent"
+                                    onclick="editLeave('{{ doctorLeave[6] }}')">
+                                <img width="40" height="40"
+                                     src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
+                                     alt="pencil--v2"/>
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        flatpickr('#date', {
+            minDate: "today",
+            dateFormat: "Y-m-d",
+            onChange: (selectedDates, dateStr) => {
+                showTimeSlots(dateStr);
+            }
+        });
+    });
+
+    function editLeave(leaveId) {
+        window.location.href = `/doctor/addLeave/${leaveId}`;
+    }
+</script>
+</body>
+</html>

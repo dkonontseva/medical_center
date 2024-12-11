@@ -201,7 +201,7 @@
     </div>
     <div class="nav-menu">
         <a href="/doctor/dashboard" class="nav-item active">Dashboard</a>
-        <a href="myPatients.html" class="nav-item">My Patients</a>
+        <a href="myLeaves.html" class="nav-item">My Patients</a>
         <a href="/doctor/patientsCards" class="nav-item">Patients' cards</a>
         <a href="/doctor/profile" class="nav-item">Profile Settings</a>
     </div>
@@ -212,16 +212,16 @@
 
     <div class="stats-container">
         <div class="stat-card">
-            <h2>1500</h2>
+            <h2>{{ total_patients }}</h2>
             <p>Total Patients</p>
         </div>
         <div class="stat-card">
-            <h2>160</h2>
+            <h2>{{ today_patients }}</h2>
             <p>Today's Patients</p>
         </div>
         <div class="stat-card">
-            <h2>85</h2>
-            <p>Appointments</p>
+            <h2>{{ total_appointments }}</h2>
+            <p>Total Appointments</p>
         </div>
     </div>
 

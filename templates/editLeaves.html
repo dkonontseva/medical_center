@@ -448,12 +448,14 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="doctor-name">Doctor Name *</label>
-                            <input type="text" name="doctor_name" id="doctor-name" value="{{ leave[5] }} {{ leave[6] }} {{ leave[7] }}">
+                            <input type="text" name="doctor_name" id="doctor-name"
+                                   value="{{ leave[5] }} {{ leave[6] }} {{ leave[7] }}">
                         </div>
                         <div class="form-group">
                             <label for="leave-type">Leave Typ *</label>
                             <select id="leave-type" name="leave_type">
-                                <option {{ 'selected' if leave and leave[0] == 'Medical Reason' }}>Medical Reason</option>
+                                <option {{ 'selected' if leave and leave[0] == 'Medical Reason' }}>Medical Reason
+                                </option>
                                 <option {{ 'selected' if leave and leave[0] == 'Casual Leave' }}>Casual Leave</option>
                                 <option {{ 'selected' if leave and leave[0] == 'Family Reason' }}>Family Reason</option>
                             </select>
@@ -520,17 +522,20 @@
         });
     });
 
-    flatpickr("#from-date", {
-        dateFormat: "d-m-y", // Устанавливаем формат даты
-        defaultDate: new Date(), // Устанавливаем текущую дату
-        static: true // Стационарное отображение календаря
+    document.addEventListener('DOMContentLoaded', () => {
+        flatpickr("#from-date", {
+            dateFormat: "d-m-y", // Устанавливаем формат даты
+            defaultDate: new Date(), // Устанавливаем текущую дату
+            static: true // Стационарное отображение календаря
+        });
+
+        flatpickr("#to-date", {
+            dateFormat: "d-m-y", // Устанавливаем формат даты
+            defaultDate: new Date(), // Устанавливаем текущую дату
+            static: true // Стационарное отображение календаря
+        });
     });
 
-    flatpickr("#to-date", {
-        dateFormat: "d-m-y", // Устанавливаем формат даты
-        defaultDate: new Date(), // Устанавливаем текущую дату
-        static: true // Стационарное отображение календаря
-    });
 
 </script>
 </body>

@@ -556,31 +556,29 @@
             console.log('Exporting...');
         });
     });
+    document.addEventListener('DOMContentLoaded', () => {
+        flatpickr('"#available-days"', {
+            minDate: "today",
+            dateFormat: "Y-m-d",
+            onChange: (selectedDates, dateStr) => {
+                showTimeSlots(dateStr);
+            }
+        });
+        flatpickr("#from-time", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true
+        });
 
-    flatpickr("#available-days", {
-        dateFormat: "Y-m-d",
-        altInput: true,
-        altFormat: "F j, Y",
-        allowInput: true,
-        onReady: function (selectedDates, dateStr, instance) {
-            instance.element.setAttribute('placeholder', 'Select your date of birth');
-        },
-        static: true, // Calendar is static on the page
-        position: "above" // Position of the calendar
-    });
-    flatpickr("#from-time", {
-        enableTime: true,
-        noCalendar: true,
-        dateFormat: "H:i",
-        time_24hr: true
+        flatpickr("#to-time", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true
+        });
     });
 
-    flatpickr("#to-time", {
-        enableTime: true,
-        noCalendar: true,
-        dateFormat: "H:i",
-        time_24hr: true
-    });
 </script>
 </body>
 </html>

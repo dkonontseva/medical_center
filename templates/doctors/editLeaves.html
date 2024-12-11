@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pre Clinic - Leave Management</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -37,85 +36,59 @@
             display: flex;
         }
 
-        /* Sidebar */
-        .container {
-            display: flex;
-            min-height: 100vh;
-        }
 
-        /* Sidebar Styles */
+        /* Sidebar */
         .sidebar {
-            width: var(--sidebar-width);
+            width: 280px;
             background: #ffffff;
             padding: 20px;
             height: 100vh;
             position: fixed;
-            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-            overflow-y: auto;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.05);
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
+        .doctor-profile {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #f0f0f0;
         }
 
-        .logo img {
-            width: 40px;
-            height: 40px;
-            margin-right: 10px;
+        .doctor-profile img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 8px 8px 16px #e6e6e6, -8px -8px 16px #ffffff;
         }
 
-        .logo span {
-            font-size: 22px;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-
-        .menu-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .menu-item {
-            display: flex;
-            align-items: center;
-            margin: 10px 0;
-            padding: 10px 15px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .menu-item a {
-            text-decoration: none;
-            color: var(--text-color);
-            font-size: 16px;
-            margin-left: 12px;
-            flex-grow: 1;
-        }
-
-        .menu-item:hover {
-            background-color: rgba(59, 76, 184, 0.1);
-        }
-
-        .menu-item.active {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .menu-item.active a {
-            color: white;
-        }
-
-        .menu-item i {
+        .doctor-info h3 {
+            color: #272b41;
             font-size: 18px;
-            color: var(--text-color);
         }
 
-        .menu-item.active i {
+        .doctor-info p {
+            color: #757575;
+            font-size: 14px;
+        }
+
+        .nav-menu .nav-item {
+            padding: 12px 20px;
+            margin: 8px 0;
+            border-radius: 10px;
+            color: #272b41;
+            display: flex;
+            align-items: center;
+            box-shadow: 4px 4px 8px #e6e6e6, -4px -4px 8px #ffffff;
+            text-decoration: none;
+        }
+
+        .nav-item.active {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .nav-item:hover {
+            background: rgba(74, 144, 226, 0.36);
             color: white;
         }
 
@@ -124,7 +97,6 @@
             margin-left: 280px;
             padding: 30px;
             flex: 1;
-            width: 1620px;
         }
 
         .header {
@@ -342,6 +314,40 @@
             background-color: #cccccc;
         }
 
+        /* Календарь */
+        .flatpickr-calendar {
+            background-color: #565fa5; /* Темный фон */
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .flatpickr-day,
+        .flatpickr-weekday {
+            color: white;
+        }
+
+        .flatpickr-day:hover {
+            background-color: rgba(108, 135, 255, 0.3);
+            color: white;
+        }
+
+        .flatpickr-day.today {
+            background-color: #6c87ff;
+            color: white;
+        }
+
+        .flatpickr-month {
+            background-color: #262626;
+        }
+
+        .flatpickr-prev-month, .flatpickr-next-month {
+            color: #6c87ff;
+        }
+
+        .flatpickr-current-month {
+            color: #6c87ff;
+        }
 
         /* Responsive Design */
         @media (max-width: 1200px) {
@@ -367,106 +373,78 @@
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="sidebar">
-        <div class="logo">
-            <img src="https://picsum.photos/32/32?random=1" alt="Logo">
-            <span>Pre Clinic</span>
-        </div>
-        <div class="menu-item">
-            <i class="fas fa-th-large"></i>
-            <a href="adminDashboard.html">Dashboard</a>
-        </div>
-        <div class="menu-item">
-            <i class="fas fa-user-md"></i>
-            <a href="doctorsList.html">Doctors</a>
-        </div>
-        <div class="menu-item">
-            <i class="fas fa-users"></i>
-            <a href="patientsList.html">Patients</a>
-        </div>
-        <div class="menu-item active">
-            <i class="fas fa-calendar-alt"></i>
-            <a href="appointmentList.html">Appointments</a>
-        </div>
-        <div class="menu-item">
-            <i class="far fa-clock"></i>
-            <a href="scheduleList.html">Doctor Schedule</a>
-        </div>
-        <div class="menu-item">
-            <i class="fas fa-hospital"></i>
-            <a href="doctorLeaves.html">Doctor Leaves</a>
+<div class="sidebar">
+    <div class="doctor-profile">
+        <img src="https://picsum.photos/200/200?random=1" alt="Doctor Profile">
+        <div class="doctor-info">
+            <h3>Dr. Darren Elder</h3>
+            <p>BDS, MDS - Oral & Maxillofacial Surgery</p>
         </div>
     </div>
-    <!-- Main Content -->
-    <div class="main-content">
-        <div class="header">
-            <h2>{{ 'Edit Appointment' if appointment_id else 'Create Appointment' }}</h2>
-        </div>
+    <div class="nav-menu">
+        <a href="/doctor/dashboard" class="nav-item active">Dashboard</a>
+        <a href="/doctor/myLeaves" class="nav-item">My Leaves</a>
+        <a href="/doctor/patientsCards" class="nav-item">Patients' cards</a>
+        <a href="/doctor/profile" class="nav-item">Profile Settings</a>
+    </div>
+</div>
 
-        <div class="container1">
-            <div class="header">
-                <a href="/admin/appointmentList" class="breadcrumb">Appointments</a> &gt;
-                <span class="breadcrumb-active">{{ 'Edit Appointment' if appointment_id else 'Create Appointment' }}</span>
-            </div>
-            <section class="edit-schedule">
-                <h2>{{ 'Edit Appointment' if appointment_id else 'Create Appointment' }}</h2>
-                <form id="edit-appointment-form" method="POST"
-                      action="{{ url_for('admin_addAppointment', appointment_id=appointment_id) if appointment_id else url_for('admin_addAppointment') }}">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="doctor-name">Doctor Name *</label>
-                            <input type="text" id="doctor-name" name="doctor_name"
-                                   value="{{ appoinment[0] }} {{ appoinment[1] }} {{ appoinment[2] }}"
-                                    {{ 'readonly' if appointment_id }}>
-                        </div>
-                        <div class="form-group">
-                            <label for="patient-name">Patient Name *</label>
-                            <input type="text" id="patient-name" name="patient_name"
-                                   value="{{ appoinment[3] }} {{ appoinment[4] }} {{ appoinment[5] }}"
-                                    {{ 'readonly' if appointment_id }}>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="date">Date *</label>
-                            <input type="date" id="date" name="date"
-                                   value="{{ appoinment[6] if appointment_id else '' }}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="time">Time *</label>
-                            <input type="time" id="time" name="time"
-                                   value="{{ appoinment[7] if appointment_id else '' }}" required>
-                        </div>
+<div class="main-content">
+    <div class="header">
+        <h2>Doctor Leave</h2>
+    </div>
+
+    <div class="container1">
+        <div class="header">
+            <a href="/doctor/myLeaves" class="breadcrumb">Doctor Leave</a>
+        </div>
+        <section class="edit-schedule">
+            <h2>Edit Leave</h2>
+            <form method="POST"
+                  action="{{ url_for('doctor_addLeave', leave_id=leave_id) if leave_id else url_for('doctor_addLeave') }}">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="doctor-name">Doctor Name *</label>
+                        <input type="text" name="doctor_name" id="doctor-name"
+                               value="{{ leave[5] }} {{ leave[6] }} {{ leave[7] }}" disabled>
                     </div>
                     <div class="form-group">
-                        <label for="notes">Reason *</label>
-                        <textarea id="notes" name="reason" placeholder="Enter any notes..."
-                                  required>{{ appoinment[9] if appointment_id else '' }}</textarea>
+                        <label for="leave-type">Leave Typ *</label>
+                        <select id="leave-type" name="leave_type">
+                            <option {{ 'selected' if leave and leave[0] == 'Medical Reason' }}>Medical Reason
+                            </option>
+                            <option {{ 'selected' if leave and leave[0] == 'Casual Leave' }}>Casual Leave</option>
+                            <option {{ 'selected' if leave and leave[0] == 'Family Reason' }}>Family Reason</option>
+                        </select>
                     </div>
-                    <div class="form-group status-group">
-                        <label>Status *</label>
-                        <input type="radio" id="approved" name="status" value="approved"
-                               {% if appoinment[8] == 'approved' %}checked{% endif %}>
-                        <label for="approved">Approved</label>
-                        <input type="radio" id="pending" name="status" value="pending"
-                               {% if appoinment[8] == 'pending' %}checked{% endif %}>
-                        <label for="pending">Pending</label>
-                        <input type="radio" id="rejected" name="status" value="rejected"
-                               {% if appoinment[8] == 'rejected' %}checked{% endif %}>
-                        <label for="rejected">Rejected</label>
+                </div>
+                <div class="form-row">
+
+                    <div class="form-group">
+                        <label for="from-date">From *</label>
+                        <input type="date" id="from-date" name="from_date" value="{{ leave[1] if leave else '' }}">
                     </div>
-                    <div class="button-group">
-                        <button type="submit"
-                                class="submit-button">{{ 'Save Changes' if appointment_id else 'Create Appointment' }}</button>
-                        <button type="button" class="cancel-button"
-                                onclick="window.location.href='/admin/appointmentList';">Cancel
-                        </button>
+                    <div class="form-group">
+                        <label for="to-date">To *</label>
+                        <input type="date" id="to-date" name="to_date" value="{{ leave[2] if leave else '' }}">
                     </div>
-                </form>
-            </section>
-        </div>
+                </div>
+                <div class="form-group">
+                    <label for="notes">Reasons </label>
+                    <textarea id="notes" name="notes">{{ leave[3] if leave else '' }}</textarea>
+                </div>
+                <div class="button-group">
+                    <button type="submit"
+                            class="submit-button">{{ 'Save Changes' if leave_id else 'Create Leave' }}</button>
+                    <button type="button" class="cancel-button"
+                            onclick="window.location.href='/doctor/myLeaves';">Cancel
+                    </button>
+                </div>
+            </form>
+        </section>
     </div>
+</div>
 </div>
 
 <script>
@@ -491,22 +469,16 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => {
-        flatpickr("#date", {
-            dateFormat: "Y-m-d",
-            altInput: true,
-            altFormat: "F j, Y",
-            allowInput: true,
-            onReady: function (selectedDates, dateStr, instance) {
-                instance.element.setAttribute('placeholder', 'Select your date of birth');
-            },
-            static: true, // Calendar is static on the page
-            position: "above" // Position of the calendar
+        flatpickr("#from-date", {
+            dateFormat: "d-m-y", // Устанавливаем формат даты
+            defaultDate: new Date(), // Устанавливаем текущую дату
+            static: true // Стационарное отображение календаря
         });
-        flatpickr("#time", {
-            enableTime: true,
-            noCalendar: true,
-            dateFormat: "H:i",
-            time_24hr: true
+
+        flatpickr("#to-date", {
+            dateFormat: "d-m-y", // Устанавливаем формат даты
+            defaultDate: new Date(), // Устанавливаем текущую дату
+            static: true // Стационарное отображение календаря
         });
     });
 

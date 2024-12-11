@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Patient Dashboard | MedCare</title>
-
-    <!-- External Libraries -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -15,6 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         [data-theme="light"] {
             --background: white;
@@ -104,7 +103,7 @@
 
 
         .dashboard-container {
-            width: 1600px;
+            width: 1580px;
             margin-left: 280px;
             padding: 30px;
             flex: 1;
@@ -211,16 +210,31 @@
         }
 
         .status-approved {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
             background: rgba(43, 193, 85, 0.1);
             color: var(--success-color);
         }
 
         .status-pending {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
             background: rgba(255, 167, 85, 0.1);
             color: var(--warning-color);
         }
 
         .status-declined {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
             background: rgba(255, 92, 117, 0.1);
             color: var(--danger-color);
         }
@@ -232,9 +246,12 @@
 
         .chart-container {
             position: relative;
-            height: 300px;
-            width: 100%;
+            width: 90%;
+            max-width: 800px;
+            height: 400px;
+            margin: 0 auto;
         }
+
 
         @keyframes fadeIn {
             from {
@@ -317,13 +334,8 @@
 <div class="dashboard-container">
     <header class="header">
         <div class="profile-section">
-            <div>
-                <h2>{{ current_user[0] }} {{ current_user[1] }}</h2>
-            </div>
+            <h2>{{ current_user[0] }} {{ current_user[1] }}</h2>
         </div>
-        <button class="theme-toggle" onclick="toggleTheme()">
-            <i class="fas fa-moon"></i> Toggle Theme
-        </button>
     </header>
 
     <div class="tabs">
@@ -344,6 +356,18 @@
                 <h3>Medical Records</h3>
                 <p>{{ medical_records }}</p>
             </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="chart-container">
+                <h3>Monthly Visits</h3>
+                <canvas id="visitsByMonthChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Departments Visits</h3>
+                <canvas id="visitsByDepartmentChart"></canvas>
+            </div>
+
         </div>
     </div>
 
@@ -367,7 +391,7 @@
                         <td>{{ appointment[2] }}</td>
                         <td>{{ appointment[3] }}</td>
                         <td>{{ appointment[4] }}</td>
-                        <td><span class="status-badge">{{ appointment[5] }}</span></td>
+                        <td><span class="status-{{ appointment[5] | lower }}">{{ appointment[5] }}</span></td>
                     </tr>
                 {% endfor %}
                 </tbody>
@@ -395,7 +419,7 @@
                         <td>{{ appointment[2] }}</td>
                         <td>{{ appointment[3] }}</td>
                         <td>{{ appointment[4] }}</td>
-                        <td><span class="status-badge">{{ appointment[5] }}</span></td>
+                        <td><span class="status-{{ appointment[5] | lower }}">{{ appointment[5] }}</span></td>
                     </tr>
                 {% endfor %}
                 </tbody>
@@ -405,28 +429,17 @@
 </div>
 
 <script>
-    // Theme Toggle
-    function toggleTheme() {
-        const body = document.body;
-        const currentTheme = body.getAttribute('data-theme');
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        body.setAttribute('data-theme', newTheme);
-
-        const themeToggle = document.querySelector('.theme-toggle i');
-        themeToggle.className = newTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
-    }
-
     // Charts
     document.addEventListener('DOMContentLoaded', function () {
-        // Appointment History Chart
-        const appointmentCtx = document.getElementById('appointmentChart').getContext('2d');
-        new Chart(appointmentCtx, {
+        const visitsByMonthCtx = document.getElementById('visitsByMonthChart').getContext('2d');
+
+        new Chart(visitsByMonthCtx, {
             type: 'line',
             data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
                 datasets: [{
-                    label: 'Appointments',
-                    data: [4, 3, 5, 2, 4, 6],
+                    label: 'Visits by Month',
+                    data: [{{ visits_by_month | join(', ') }}],
                     borderColor: '#2196f3',
                     tension: 0.4,
                     fill: false
@@ -442,16 +455,19 @@
                 }
             }
         });
+    });
 
-        // Health Status Chart
-        const healthCtx = document.getElementById('healthChart').getContext('2d');
-        new Chart(healthCtx, {
+    // Health Status Chart
+    document.addEventListener('DOMContentLoaded', function () {
+        // Visits by Department Radar Chart
+        const visitsByDepartmentCtx = document.getElementById('visitsByDepartmentChart').getContext('2d');
+        new Chart(visitsByDepartmentCtx, {
             type: 'radar',
             data: {
-                labels: ['Blood Pressure', 'Heart Rate', 'Cholesterol', 'Blood Sugar', 'BMI'],
+                labels: [{% for dept in visits_by_department %}'{{ dept[0] }}'{% if not loop.last %}, {% endif %}{% endfor %}],
                 datasets: [{
-                    label: 'Current',
-                    data: [85, 78, 92, 88, 76],
+                    label: 'Visits by Department',
+                    data: [{{ visits_by_department | map(attribute=1) | join(', ') }}],
                     backgroundColor: 'rgba(33, 150, 243, 0.2)',
                     borderColor: '#2196f3',
                     pointBackgroundColor: '#2196f3'
@@ -468,32 +484,7 @@
                 }
             }
         });
-    });
-
-    // Add smooth scrolling
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            document.querySelector(this.getAttribute('href')).scrollIntoView({
-                behavior: 'smooth'
-            });
-        });
-    });
-
-    // Add animation on scroll
-    const observerOptions = {
-        threshold: 0.1
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('animated');
-            }
-        });
-    }, observerOptions);
-
-    document.querySelectorAll('.card, .table-responsive').forEach((el) => observer.observe(el));
+    })
 
     function switchTab(tab) {
         document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
@@ -503,11 +494,8 @@
         document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
     }
 
-    function redirectToNotesPage() {
-        window.location.href = "notesPatient.html";
-    }
+
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

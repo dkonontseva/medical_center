@@ -1,10 +1,11 @@
 import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from functools import wraps
+
 import jwt
 import psycopg2
 from flask import Flask, request, render_template, redirect, jsonify, session
-from flask_login import LoginManager, UserMixin, login_user, login_required, current_user
+
 app = Flask(__name__)
 app.secret_key = '8sJqMOWkUCy2tW6Xiubx'
 salt = 'VsikgpaJavBH_v8OvEl'
@@ -71,6 +72,7 @@ def token_required(func):
     decorated.__name__ = func.__name__
     return decorated
 
+
 def login_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -78,6 +80,7 @@ def login_required(func):
             # flash("You must be logged in to access this page.", "error")
             return redirect('/login')
         return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -92,8 +95,11 @@ def role_required(required_roles):
                 # flash("You do not have permission to access this page.", "error")
                 return redirect('/login')
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -176,7 +182,7 @@ def login():
             if session['user_role'] == 'doctor':
                 response = redirect('/doctor/dashboard')
             if session['user_role'] == 'admin':
-                response = redirect('/admin/adminDashboard')
+                response = redirect('/admin/dashboard')
 
             response.set_cookie('token', token)
             return response
@@ -190,12 +196,15 @@ def login():
 @login_required
 @role_required(['patient'])
 def patient_dashboard():
+    user_id = session.get('user_id')
     cursor = conn.cursor()
-    patient_id = session['user_id']
+    cursor.execute("SELECT patients._id FROM patients WHERE patients.user_id = %s", (user_id,))
+    patient_id = cursor.fetchone()
 
-    cursor.execute("SELECT first_name, last_name FROM patients WHERE user_id = %s", (patient_id,))
+    cursor.execute("SELECT patients.first_name, patients.last_name"
+                   " FROM patients WHERE patients.user_id = %s", (user_id,))
     current_user = cursor.fetchone()
-    # Получение статистики
+
     cursor.execute("""
         SELECT MIN(date) AS next_appointment
         FROM talons
@@ -209,8 +218,32 @@ def patient_dashboard():
         WHERE patient_id = %s
     """, (patient_id,))
     medical_records = cursor.fetchone()[0]
+
     cursor.execute("""
-        SELECT doctors.first_name, doctors.last_name, departments.department, talons.date, talons.time, talons.status 
+        SELECT EXTRACT(MONTH FROM date) AS month, COUNT(*) AS count
+        FROM talons
+        WHERE patient_id = %s
+        GROUP BY month
+        ORDER BY month
+    """, (patient_id,))
+    visits_by_month = cursor.fetchall()
+    visits_by_month_full = [0] * 12
+
+    for month, count in visits_by_month:
+        visits_by_month_full[int(month) - 1] = count
+
+    cursor.execute("""
+        SELECT departments.department, COUNT(*) AS count
+        FROM talons
+        JOIN doctors ON talons.doctor_id = doctors._id
+        JOIN departments ON doctors.department_id = departments._id
+        WHERE talons.patient_id = %s
+        GROUP BY departments.department
+    """, (patient_id,))
+    visits_by_department = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT doctors.first_name, doctors.last_name, departments.department, talons.date, talons.time, talons.status
         FROM talons
         JOIN doctors ON talons.doctor_id = doctors._id
         JOIN departments ON doctors.department_id = departments._id
@@ -220,7 +253,6 @@ def patient_dashboard():
     """, (patient_id,))
     recent_appointments = cursor.fetchall()
 
-    # История записей
     cursor.execute("""
         SELECT doctors.first_name, doctors.last_name, departments.department, talons.date, talons.time, talons.status
         FROM talons
@@ -235,13 +267,14 @@ def patient_dashboard():
 
     return render_template(
         'patients/dashboard.html',
+        current_user=current_user,
         next_appointment=next_appointment,
         medical_records=medical_records,
+        visits_by_month=visits_by_month_full,
+        visits_by_department=visits_by_department,
         recent_appointments=recent_appointments,
         appointment_history=appointment_history,
-        current_user=current_user
     )
-
 
 
 @app.route('/patientProfile', methods=['GET', 'POST'])
@@ -253,7 +286,7 @@ def patient_profile():
     if request.method == 'GET':
         cursor.execute("SELECT first_name, last_name, second_name, phone_number, email, b_day, gender, country, "
                        "city, street, house, flat, addresses._id  from patients join addresses on patients.address_id = addresses._id "
-                       "where user_id=%s", (str(user.get_id())))
+                       "where user_id=%s", (str(session.get('user_id'))))
         result = cursor.fetchone()
         print(result)
         return render_template('patients/profile.html', user_profile=result)
@@ -275,7 +308,7 @@ def patient_profile():
             """, (
             str(first_name), str(last_name), str(second_name), str(email), str(phone_number), str(gender),
             date_of_birth,
-            str(user.get_id())))
+            str(session.get('user_id'))))
         conn.commit()
 
         cursor.close()
@@ -316,7 +349,7 @@ def patient_change_password():
         repeat_password = request.form.get('repeat-password')
 
         cursor = conn.cursor()
-        cursor.execute("SELECT password FROM users WHERE _id = %s", str(user.get_id()))
+        cursor.execute("SELECT password FROM users WHERE _id = %s", str(session.get('user_id')))
         result = cursor.fetchone()
 
         stored_password = result[0]
@@ -333,7 +366,7 @@ def patient_change_password():
         cursor.execute("""
                         UPDATE users
                         SET password = %s WHERE _id=%s
-                    """, (str(encrypted_new), str(user.get_id())))
+                    """, (str(encrypted_new), str(session.get('user_id'))))
         conn.commit()
         cursor.close()
 
@@ -347,6 +380,7 @@ def myMedicalCard():
     if request.method == 'POST':
         search_query = request.form.get('search_query', '').strip()
         search_query = f"%{search_query}%"
+        user_id = session.get('user_id')
         cursor = conn.cursor()
         cursor.execute("""
                 SELECT doctors.first_name, doctors.second_name, medical_card.date, medical_card._id
@@ -354,7 +388,7 @@ def myMedicalCard():
                 JOIN patients ON medical_card.patient_id = patients._id
                 JOIN doctors ON medical_card.doctor_id = doctors._id
                 WHERE patients.user_id = %s AND (doctors.first_name ILIKE %s OR doctors.second_name ILIKE %s);
-            """, (user.get_id(), search_query, search_query))
+            """, (user_id, search_query, search_query))
         search = cursor.fetchall()
         cursor.close()
         print(search)
@@ -365,7 +399,7 @@ def myMedicalCard():
         cursor.execute("""SELECT doctors.first_name, doctors.second_name, medical_card.date, medical_card._id FROM medical_card 
                                 join patients on medical_card.patient_id=patients._id 
                                 join doctors on medical_card.doctor_id = doctors._id
-                                where patients.user_id=%s""", (str(user.get_id())))
+                                where patients.user_id=%s""", (str(session.get('user_id'))))
         result = cursor.fetchall()
         cursor.close()
         return render_template('patients/medicalCard.html', medicalCard=result)
@@ -404,7 +438,7 @@ def searchMedNote():
                                 WHERE patients.user_id = %s AND (doctors.first_name ILIKE %s OR doctors.second_name ILIKE %s 
                                 OR doctors.last_name ILIKE %s);
                                 """,
-                             (str(user.get_id()), search_query, search_query)))
+                             (str(session.get('user_id')), search_query, search_query)))
         search = cursor.fetchall()
         cursor.close()
     return render_template('patients/medicalCard.html', medicalCard=search)
@@ -415,22 +449,24 @@ def searchMedNote():
 @role_required(['patient'])
 def find_appointment():
     cursor = conn.cursor()
-    date = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+
     cursor.execute("SELECT _id, department FROM departments ORDER BY department ASC")
     departments = cursor.fetchall()
+
+    requested_date = request.args.get('date', date.today().isoformat())
     department = request.args.get('department', '')
-    doctor_search = request.args.get('search', '')
+    doctor_search = request.args.get('doctor_search', '')
+
+    day_of_week = datetime.strptime(requested_date, '%Y-%m-%d').isoweekday()
 
     query = """
         SELECT doctors._id, doctors.first_name, doctors.last_name, doctors.phone_number, departments.department
         FROM doctors
         JOIN departments ON doctors.department_id = departments._id
-        WHERE NOT EXISTS (
-            SELECT 1 FROM talons 
-            WHERE talons.doctor_id = doctors._id AND talons.date = %s
-        )
+        JOIN schedules ON doctors._id = schedules.doctor_id
+        WHERE schedules.day_of_week = %s
     """
-    params = [date]
+    params = [day_of_week]
 
     if department:
         query += " AND departments.department ILIKE %s"
@@ -448,7 +484,12 @@ def find_appointment():
     doctors = cursor.fetchall()
     cursor.close()
 
-    return render_template('patients/findAppointment.html', doctor_list=doctors, departments=departments)
+    return render_template(
+        'patients/findAppointment.html',
+        date=requested_date,
+        doctor_list=doctors,
+        departments=departments
+    )
 
 
 @app.route('/findAppointment/slots', methods=['GET'])
@@ -457,38 +498,59 @@ def find_appointment():
 def get_available_slots():
     doctor_id = request.args.get('doctor_id')
     date = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+    day_of_week = datetime.strptime(date, '%Y-%m-%d').isoweekday()
+
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT time FROM schedule
-        WHERE doctor_id = %s AND date = %s AND NOT EXISTS (
-            SELECT 1 FROM talons
-            WHERE talons.doctor_id = schedule.doctor_id 
-            AND talons.date = schedule.date 
-            AND talons.time = schedule.time
-        )
-    """, (doctor_id, date))
+        SELECT shifts.start_time, shifts.end_time 
+        FROM shifts 
+        JOIN schedules ON shifts._id = schedules.shift_id
+        WHERE schedules.doctor_id = %s AND schedules.day_of_week = %s
+    """, (doctor_id, day_of_week))
+    shifts = cursor.fetchall()
 
-    slots = cursor.fetchall()
+    cursor.execute("""
+        SELECT time FROM talons
+        WHERE doctor_id = %s AND date = %s
+    """, (doctor_id, date))
+    booked_slots = {row[0] for row in cursor.fetchall()}
+
     cursor.close()
 
-    return render_template('patients/findAppointment.html', available_slots=slots)
+    available_slots = []
+    for start_time, end_time in shifts:
+        current_time = datetime.combine(datetime.today(), start_time)
+        end_time_dt = datetime.combine(datetime.today(), end_time)
+
+        while current_time < end_time_dt:
+            slot_time = current_time.strftime('%H:%M')
+            if slot_time not in booked_slots:
+                available_slots.append(slot_time)
+            current_time += timedelta(minutes=30)
+
+    return jsonify({"available_slots": available_slots})
 
 
 @app.route('/bookAppointment', methods=['POST'])
 @login_required
 @role_required(['patient'])
 def book_appointment():
-    doctor_id = request.form.get('doctor_id')
-    date = request.form.get('date')
-    time = request.form.get('time')
-    patient_id = request.form.get('patient_id')
-
+    data = request.get_json()
+    doctor_id = data.get('doctor_id')
+    date = data.get('date')
+    start_time = data.get('time')
+    user_id = session.get('user_id')
     cursor = conn.cursor()
+
+    cursor.execute("SELECT patients._id FROM patients WHERE patients.user_id = %s", (user_id,))
+    patient_id = cursor.fetchone()
+    print("bookAppointment " + str(patient_id))
+
     cursor.execute("""
         INSERT INTO talons (doctor_id, patient_id, date, time, status)
         VALUES (%s, %s, %s, %s, 'pending')
-    """, (doctor_id, patient_id, date, time))
+    """, (doctor_id, patient_id[0], date, start_time))
     conn.commit()
     cursor.close()
 
@@ -500,9 +562,8 @@ def book_appointment():
 @role_required(['doctor'])
 def doctor_dashboard():
     cursor = conn.cursor()
-    cursor.execute(""" SELECT _id FROM doctors WHERE user_id = %s""", str(user.get_id()))
-    doctor_id = cursor.fetchone()
-    print(doctor_id)
+    cursor.execute("""SELECT _id FROM doctors WHERE user_id = %s""", (str(session.get('user_id')),))
+    doctor_id = cursor.fetchone()[0]
     today = datetime.now().date()
 
     if request.method == 'POST':
@@ -517,32 +578,58 @@ def doctor_dashboard():
         elif action == 'cancel':
             cursor.execute("""
                 UPDATE talons
-                SET status = 'cancelled'
+                SET status = 'declined'
                 WHERE _id = %s AND doctor_id = %s
             """, (appointment_id, doctor_id))
         conn.commit()
 
+    # Получение данных для статистики
+    cursor.execute("""
+        SELECT COUNT(DISTINCT patient_id)
+        FROM talons
+        WHERE doctor_id = %s
+    """, (doctor_id,))
+    total_patients = cursor.fetchone()[0]
+
+    cursor.execute("""
+        SELECT COUNT(*)
+        FROM talons
+        WHERE doctor_id = %s AND date = %s
+    """, (doctor_id, today))
+    today_patients = cursor.fetchone()[0]
+
+    cursor.execute("""
+        SELECT COUNT(*)
+        FROM talons
+        WHERE doctor_id = %s
+    """, (doctor_id,))
+    total_appointments = cursor.fetchone()[0]
+
+    # Запросы для предстоящих и сегодняшних приемов
     cursor.execute("""
         SELECT a._id, p.first_name, p.last_name, a.date, a.time, a.purpose, a.status
         FROM talons a
         JOIN patients p ON a.patient_id = p._id
-        WHERE a.doctor_id = %s AND a.date > %s AND a.status != 'cancelled'
+        WHERE a.doctor_id = %s AND a.date >= %s AND a.status != 'declined'
         ORDER BY a.date, a.time
     """, (doctor_id, today))
     upcoming_appointments = cursor.fetchall()
 
     cursor.execute("""
-        SELECT a._id, p.first_name, p.last_name, a.time, a.purpose, a.status,  a.patient_id
+        SELECT a._id, p.first_name, p.last_name, a.time, a.purpose, a.status, a.patient_id
         FROM talons a
         JOIN patients p ON a.patient_id = p._id
-        WHERE a.doctor_id = %s AND a.date = %s AND a.status != 'cancelled'
+        WHERE a.doctor_id = %s AND a.date = %s AND a.status != 'declined'
         ORDER BY a.time
     """, (doctor_id, today))
     today_appointments = cursor.fetchall()
-    print(today_appointments)
 
     cursor.close()
+
     return render_template('doctors/dashboard.html',
+                           total_patients=total_patients,
+                           today_patients=today_patients,
+                           total_appointments=total_appointments,
                            upcoming_appointments=upcoming_appointments,
                            today_appointments=today_appointments)
 
@@ -553,7 +640,8 @@ def doctor_dashboard():
 def add_note(patient_id):
     cursor = conn.cursor()
     # Получение данных врача
-    cursor.execute(""" SELECT _id, first_name, last_name FROM doctors WHERE user_id = %s""", (str(user.get_id()),))
+    cursor.execute(""" SELECT _id, first_name, last_name FROM doctors WHERE user_id = %s""",
+                   (str(session.get('user_id')),))
     doctor = cursor.fetchone()
 
     if request.method == 'POST':
@@ -596,7 +684,7 @@ def patientsCards():
                 JOIN patients ON medical_card.patient_id = patients._id
                 JOIN doctors ON medical_card.doctor_id = doctors._id
                 WHERE doctors.user_id = %s AND (patients.first_name ILIKE %s OR patients.second_name ILIKE %s);
-            """, (user.get_id(), search_query, search_query))
+            """, (session.get('user_id'), search_query, search_query))
         search = cursor.fetchall()
         print(search)
         return render_template('doctors/patientsCards.html', medicalCard=search)
@@ -605,7 +693,8 @@ def patientsCards():
         cursor.execute("""SELECT patients.last_name, patients.first_name, medical_card.date, medical_card._id FROM medical_card 
                                 join patients on medical_card.patient_id=patients._id 
                                 join doctors on medical_card.doctor_id = doctors._id
-                                where doctors.user_id=%s ORDER BY medical_card.date DESC """, (str(user.get_id())))
+                                where doctors.user_id=%s ORDER BY medical_card.date DESC """,
+                       (str(session.get('user_id'))))
         result = cursor.fetchall()
         cursor.close()
         return render_template('doctors/patientsCards.html', medicalCard=result)
@@ -630,6 +719,134 @@ def medical_record_doctor(record_id):
     return render_template('doctors/medicalCard.html', record=record)
 
 
+@app.route('/doctor/myLeaves', methods=['GET', 'POST'])
+@login_required
+@role_required(['doctor'])
+def doctor_myLeaves():
+    cursor = conn.cursor()
+    current_date = datetime.now().strftime('%Y-%m-%d')
+
+    cursor.execute("""
+        SELECT _id FROM doctors WHERE user_id = %s
+    """, (session.get('user_id'),))
+    doctor_id = cursor.fetchone()[0]
+
+    if request.method == 'GET':
+        cursor.execute("""
+            SELECT leave_type, from_date, to_date, reason, status, 
+                   (to_date - from_date + 1) AS days_count, _id
+            FROM doctorLeaves
+            WHERE doctor_id = %s
+            ORDER BY from_date DESC
+        """, (doctor_id,))
+        doctor_leaves = cursor.fetchall()
+        cursor.close()
+        return render_template('doctors/myLeaves.html', doctorLeaves=doctor_leaves, current_date=current_date)
+
+    if request.method == 'POST':
+        search_query = request.form.get('search_query', '').strip()
+        leave_type = request.form.get('leave_type', '').strip()
+        status = request.form.get('status', '').strip()
+        from_date = request.form.get('from_date', current_date)
+        to_date = request.form.get('to_date', current_date)
+
+        query = """
+             SELECT leave_type, from_date, to_date, reason, status, 
+                    (to_date - from_date + 1) AS days_count, doctorLeaves._id
+             FROM doctorLeaves
+             WHERE doctor_id = %s
+         """
+        params = [doctor_id]
+
+        if search_query:
+            query += """
+                 AND (leave_type ILIKE %s OR reason ILIKE %s)
+             """
+            params.extend([f"%{search_query}%", f"%{search_query}%"])
+
+        if leave_type:
+            query += " AND leave_type = %s"
+            params.append(leave_type)
+
+        if status:
+            query += " AND status = %s"
+            params.append(status)
+
+        if from_date:
+            query += " AND from_date >= %s "
+            params.append(from_date)
+
+        if to_date:
+            query += " AND to_date <= %s"
+            params.append(to_date)
+
+        # Выполнение запроса и возврат результатов
+        print(query, params)  # Для отладки
+        cursor.execute(query, params)
+        doctor_leaves = cursor.fetchall()
+        cursor.close()
+
+        return render_template('doctors/myLeaves.html', doctorLeaves=doctor_leaves, current_date=current_date)
+
+
+@app.route('/doctor/addLeave', methods=['GET', 'POST'])
+@app.route('/doctor/addLeave/<int:leave_id>', methods=['GET', 'POST'])
+@login_required
+@role_required(['doctor'])
+def doctor_addLeave(leave_id=None):
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT _id FROM doctors WHERE user_id = %s
+    """, (session.get('user_id'),))
+    doctor_id = cursor.fetchone()[0]
+
+    if request.method == 'GET':
+        if leave_id:
+            cursor.execute("""
+                SELECT leave_type, from_date, to_date, reason, status, doctors.last_name, doctors.first_name, doctors.second_name 
+                FROM doctorleaves JOIN doctors on doctorleaves.doctor_id = doctors._id 
+                WHERE doctorleaves._id = %s AND doctorleaves.doctor_id = %s
+            """, (leave_id, doctor_id))
+            leave_data = cursor.fetchone()
+            cursor.close()
+
+            if leave_data:
+                return render_template('doctors/editLeaves.html', leave=leave_data, leave_id=leave_id)
+            else:
+                return "Leave not found or unauthorized access.", 404
+        else:
+            empty_leave_data = {
+                'leave_type': '',
+                'from_date': '',
+                'to_date': '',
+                'reason': '',
+                'status': 'Pending',
+            }
+            return render_template('doctors/editLeaves.html', leave=empty_leave_data)
+
+    if request.method == 'POST':
+        leave_type = request.form.get('leave_type')
+        from_date = request.form.get('from_date')
+        to_date = request.form.get('to_date')
+        reason = request.form.get('notes', '').strip()
+
+        if leave_id:
+            cursor.execute("""
+                UPDATE doctorleaves
+                SET leave_type = %s, from_date = %s, to_date = %s, reason = %s 
+                WHERE _id = %s AND doctor_id = %s
+            """, (leave_type, from_date, to_date, reason, leave_id, doctor_id))
+        else:
+            cursor.execute("""
+                INSERT INTO doctorleaves (doctor_id, leave_type, from_date, to_date, reason, status)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (doctor_id, leave_type, from_date, to_date, reason, 'Pending'))
+
+        conn.commit()
+        cursor.close()
+        return redirect('/doctor/myLeaves')
+
+
 @app.route('/doctor/profile', methods=['GET', 'POST'])
 @login_required
 @role_required(['doctor'])
@@ -646,7 +863,7 @@ def doctor_profile():
             JOIN users ON users._id = doctors.user_id 
             JOIN education ON education._id = doctors.education_id
             WHERE users._id = %s
-        """, (str(user.get_id()),))
+        """, (str(session.get('user_id')),))
         result = cursor.fetchone()
         cursor.close()
         return render_template('doctors/profile.html', user_profile=result)
@@ -664,7 +881,7 @@ def doctor_profile():
             UPDATE doctors
             SET first_name = %s, last_name = %s, second_name = %s, phone_number = %s, gender = %s
             WHERE user_id = %s
-        """, (first_name, last_name, second_name, phone_number, gender, str(user.get_id())))
+        """, (first_name, last_name, second_name, phone_number, gender, str(session.get('user_id'))))
         conn.commit()
 
         # Обновление email в таблице users
@@ -672,7 +889,7 @@ def doctor_profile():
             UPDATE users
             SET login = %s
             WHERE _id = %s
-        """, (email, str(user.get_id())))
+        """, (email, str(session.get('user_id'))))
         conn.commit()
 
         cursor.close()
@@ -701,6 +918,7 @@ def doctor_profile_address():
     cursor.close()
     return redirect('/doctor/profile')
 
+
 @app.route('/doctor/profile/education', methods=['POST'])
 @login_required
 @role_required(['doctor'])
@@ -721,6 +939,7 @@ def doctor_profile_education():
     cursor.close()
     return redirect('/doctor/profile')
 
+
 @app.route('/doctor/profile/password', methods=['POST'])
 @login_required
 @role_required(['doctor'])
@@ -731,7 +950,7 @@ def doctor_change_password():
     new_password = request.form.get('new-password')
     repeat_password = request.form.get('repeat-password')
 
-    cursor.execute("SELECT password FROM users WHERE _id = %s", str(user.get_id()))
+    cursor.execute("SELECT password FROM users WHERE _id = %s", str(session.get('user_id')))
     result = cursor.fetchone()
 
     decrypted_password = hashlib.sha256((old_password + salt).encode()).hexdigest()
@@ -743,7 +962,7 @@ def doctor_change_password():
             cursor.execute("""
                                         UPDATE users
                                         SET password = %s WHERE _id=%s
-                                    """, (str(encrypted_new), str(user.get_id())))
+                                    """, (str(encrypted_new), str(session.get('user_id'))))
             conn.commit()
             cursor.close()
             return redirect('/doctor/profile')
@@ -755,12 +974,54 @@ def doctor_change_password():
         return render_template('doctors/profile.html', error_message="Old password is incorrect!")
 
 
-
-@app.route('/admin/adminDashboard', methods=['GET', 'POST'])
+@app.route('/admin/dashboard', methods=['GET'])
 @login_required
 @role_required(['admin'])
 def admin_dashboard():
-    return render_template('adminDashboard.html')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM doctors")
+    total_doctors = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM patients")
+    total_patients = cursor.fetchone()[0]
+
+    today = datetime.now().date()
+    cursor.execute("SELECT COUNT(*) FROM talons WHERE date = %s", (today,))
+    today_appointments = cursor.fetchone()[0]
+
+    cursor.execute("""
+        SELECT EXTRACT(MONTH FROM date) AS month, COUNT(*) AS count
+        FROM talons
+        GROUP BY month
+        ORDER BY month
+    """)
+    visits_by_month = cursor.fetchall()
+    visits_by_month_full = [0] * 12
+
+    for month, count in visits_by_month:
+        visits_by_month_full[int(month) - 1] = count
+
+    cursor.execute("""
+        SELECT departments.department, COUNT(*) AS count
+        FROM talons
+        JOIN doctors ON talons.doctor_id = doctors._id
+        JOIN departments ON doctors.department_id = departments._id
+        GROUP BY departments.department
+    """)
+    visits_by_department = cursor.fetchall()
+
+    cursor.execute("SELECT COUNT(*) FROM talons")
+    all_appointments = cursor.fetchone()[0]
+    cursor.close()
+
+    return render_template('adminDashboard.html',
+                           total_doctors=total_doctors,
+                           total_patients=total_patients,
+                           today_appointments=today_appointments,
+                           all_appointments=all_appointments,
+                           visits_by_month=visits_by_month_full,
+                           visits_by_department=visits_by_department)
 
 
 # @app.route('/admin/scheduleList', methods=['GET', 'POST'])
@@ -868,6 +1129,7 @@ def admin_scheduleList():
         cursor.close()
         return render_template('scheduleList.html', doctors=result, current_date=current_date, departments=departments)
 
+
 # @app.route('/admin/addSchedule', methods=['GET', 'POST'])
 # @app.route('/admin/addSchedule/<int:schedule_id>', methods=['GET', 'POST'])
 # @login_required
@@ -956,7 +1218,8 @@ def add_schedule(schedule_id=None):
             cursor.close()
 
             if schedule_data:
-                return render_template('editSchedule.html', schedule=schedule_data, shifts=shifts, schedule_id=schedule_id)
+                return render_template('editSchedule.html', schedule=schedule_data, shifts=shifts,
+                                       schedule_id=schedule_id)
             else:
                 return "Schedule not found", 404
         else:
@@ -1017,35 +1280,50 @@ def admin_doctorLeaves():
         result = cursor.fetchall()
         cursor.close()
         return render_template('doctorLeaves.html', doctorLeaves=result, current_date=current_date)
-    if (request.method == 'POST'):
+    if request.method == 'POST':
         search_query = request.form.get('search_query', '').strip()
         leave_type = request.form.get('leave_type', '').strip()
         status = request.form.get('status', '').strip()
         from_date = request.form.get('from_date', current_date)
         to_date = request.form.get('to_date', current_date)
 
-        query = """SELECT doctors.last_name, doctors.first_name, doctors.second_name, doctorLeaves.leave_type, doctorLeaves.from_date, 
-                       doctorLeaves.to_date, doctorLeaves.reason, doctorLeaves.status, doctorLeaves._id,
-                        (doctorLeaves.to_date - doctorLeaves.from_date + 1) AS days_count 
-                       FROM doctorLeaves JOIN doctors on doctors._id=doctorLeaves.doctor_id """
+        query = """
+            SELECT doctors.last_name, doctors.first_name, doctors.second_name, doctorLeaves.leave_type, 
+                   doctorLeaves.from_date, doctorLeaves.to_date, doctorLeaves.reason, doctorLeaves.status, 
+                   doctorLeaves._id, (doctorLeaves.to_date - doctorLeaves.from_date + 1) AS days_count 
+            FROM doctorLeaves 
+            JOIN doctors on doctors._id = doctorLeaves.doctor_id
+            WHERE 1=1
+        """
         params = []
+
         if search_query:
             query += """
                 AND (doctors.first_name ILIKE %s OR doctors.second_name ILIKE %s OR doctors.last_name ILIKE %s)
             """
             params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
+
         if leave_type:
             query += " AND doctorLeaves.leave_type = %s"
             params.append(leave_type)
+
         if status:
             query += " AND doctorLeaves.status = %s"
             params.append(status)
-        query += """
-            AND doctorLeaves.from_date >= %s
-            AND doctorLeaves.to_date <= %s
-        """
-        params.extend([from_date, to_date])
+
+        if from_date:
+            query += """
+                AND doctorLeaves.from_date >= %s
+            """
+            params.append(from_date)
+        if to_date:
+            query += """ AND doctorLeaves.to_date <= %s """
+            params.append(to_date)
+
         query += " ORDER BY doctors.last_name ASC"
+
+        print(query, params)
+
         cursor.execute(query, params)
         result = cursor.fetchall()
         cursor.close()
@@ -1192,7 +1470,8 @@ def admin_addAppointment(appointment_id=None):
             cursor.close()
 
             if appointment_data:
-                return render_template('editAppointnment.html', appoinment=appointment_data, appointment_id=appointment_id)
+                return render_template('editAppointnment.html', appoinment=appointment_data,
+                                       appointment_id=appointment_id)
             else:
                 return "Leave not found", 404
         else:
@@ -1206,7 +1485,7 @@ def admin_addAppointment(appointment_id=None):
                 'first_name': '',
                 'second_name': ''
             }
-            return render_template('editAppointnment.html',  appoinment=empty_leave_data)
+            return render_template('editAppointnment.html', appoinment=empty_leave_data)
 
     if request.method == 'POST':
         doctor_name = request.form.get('doctor_name', '').strip()
@@ -1275,6 +1554,7 @@ def admin_patientsList():
         print(search)
         return render_template('patientsList.html', patients=search)
 
+
 @app.route('/admin/addPatient', methods=['GET', 'POST'])
 @app.route('/admin/addPatient/<int:patient_id>', methods=['GET', 'POST'])
 @login_required
@@ -1304,19 +1584,19 @@ def admin_addPatient(patient_id=None):
                 'first_name': '',
                 'second_name': ''
             }
-            return render_template('editPatient.html',  patient=empty_leave_data)
+            return render_template('editPatient.html', patient=empty_leave_data)
 
     if request.method == 'POST':
-        first_name=request.form.get('firstname', '').strip()
-        last_name=request.form.get('lastname', '').strip()
-        second_name=request.form.get('secondname', '').strip()
+        first_name = request.form.get('firstname', '').strip()
+        last_name = request.form.get('lastname', '').strip()
+        second_name = request.form.get('secondname', '').strip()
         email = request.form.get('email', '').strip()
         phone = request.form.get('phone', '').strip()
         dob = request.form.get('dob')
         gender = request.form.get('gender')
-        country=request.form.get('country')
-        city=request.form.get('city')
-        street=request.form.get('street')
+        country = request.form.get('country')
+        city = request.form.get('city')
+        street = request.form.get('street')
         house = request.form.get('house')
         flat = request.form.get('flat')
         if patient_id:
@@ -1333,7 +1613,7 @@ def admin_addPatient(patient_id=None):
                                 UPDATE addresses
                                 SET country=%s, city = %s, street = %s, house = %s, flat=%s
                                 WHERE _id = %s
-                            """, (country, city,street, house, flat, address_id))
+                            """, (country, city, street, house, flat, address_id))
             conn.commit()
             cursor.execute("""SELECT patients.user_id FROM patients WHERE patients._id = %s""",
                            (patient_id,))
@@ -1351,7 +1631,8 @@ def admin_addPatient(patient_id=None):
             conn.commit()
 
             cursor.execute("""SELECT addresses._id FROM addresses 
-            WHERE country=%s AND city=%s AND house=%s AND flat=%s AND street=%s""", (country, city, house, flat, street))
+            WHERE country=%s AND city=%s AND house=%s AND flat=%s AND street=%s""",
+                           (country, city, house, flat, street))
             address_id = cursor.fetchone()
 
             cursor.execute("""INSERT INTO users(login, password, role_id)
@@ -1396,7 +1677,7 @@ def admin_doctorsList():
         search_query = request.form.get('search_query', '').strip()
         department_id = request.form.get('department_id', '').strip()
         search_query = f"%{search_query}%"
-        query="""
+        query = """
                 SELECT doctors._id, last_name, first_name, second_name, departments.department, phone_number,
                 start_date, users.login, university, faculty, specialization 
                 FROM doctors JOIN addresses on addresses._id=doctors.address_id 
@@ -1417,7 +1698,8 @@ def admin_doctorsList():
         query += " ORDER BY last_name ASC"
         cursor.execute(query, params)
         search = cursor.fetchall()
-        return render_template('doctorsList.html', doctors=search,departments=departments)
+        return render_template('doctorsList.html', doctors=search, departments=departments)
+
 
 @app.route('/admin/addDoctor', methods=['GET', 'POST'])
 @app.route('/admin/addDoctor/<int:doctor_id>', methods=['GET', 'POST'])
@@ -1442,7 +1724,8 @@ def admin_addDoctor(doctor_id=None):
             cursor.close()
 
             if doctor_data:
-                return render_template('editDoctor.html', doctor=doctor_data, doctor_id=doctor_id, departments=departments)
+                return render_template('editDoctor.html', doctor=doctor_data, doctor_id=doctor_id,
+                                       departments=departments)
         else:
             empty_leave_data = {
                 'phone': '',
@@ -1452,25 +1735,25 @@ def admin_addDoctor(doctor_id=None):
                 'first_name': '',
                 'second_name': ''
             }
-            return render_template('editDoctor.html',  doctor=empty_leave_data,  departments=departments)
+            return render_template('editDoctor.html', doctor=empty_leave_data, departments=departments)
 
     if request.method == 'POST':
-        first_name=request.form.get('firstname', '').strip()
-        last_name=request.form.get('lastname', '').strip()
-        second_name=request.form.get('secondname', '').strip()
+        first_name = request.form.get('firstname', '').strip()
+        last_name = request.form.get('lastname', '').strip()
+        second_name = request.form.get('secondname', '').strip()
         email = request.form.get('email', '').strip()
         phone = request.form.get('phone', '').strip()
         dob = request.form.get('dob')
         gender = request.form.get('gender')
-        country=request.form.get('country')
-        city=request.form.get('city')
-        street=request.form.get('street')
+        country = request.form.get('country')
+        city = request.form.get('city')
+        street = request.form.get('street')
         house = request.form.get('house')
         flat = request.form.get('flat')
-        department=request.form.get('department')
-        university=request.form.get('university')
-        faculty=request.form.get('faculty')
-        specialization=request.form.get('specialization')
+        department = request.form.get('department')
+        university = request.form.get('university')
+        faculty = request.form.get('faculty')
+        specialization = request.form.get('specialization')
         if doctor_id:
             cursor.execute("""
                     UPDATE doctors
@@ -1524,13 +1807,14 @@ def admin_addDoctor(doctor_id=None):
                 VALUES (%s, %s, %s, %s, %s)""", (country, city, house, flat, street))
                 conn.commit()
                 cursor.execute("""SELECT addresses._id FROM addresses 
-                WHERE country=%s AND city=%s AND house=%s AND flat=%s AND street=%s""", (country, city, house, flat, street))
+                WHERE country=%s AND city=%s AND house=%s AND flat=%s AND street=%s""",
+                               (country, city, house, flat, street))
                 address_id = cursor.fetchone()
 
             cursor.execute("""SELECT education._id FROM education 
              WHERE university=%s AND faculty=%s AND specialization=%s""", (university, faculty, specialization))
             education_id = cursor.fetchone()
-            if education_id==None:
+            if education_id == None:
                 cursor.execute("""INSERT INTO education(university, faculty, specialization)
                 VALUES (%s, %s, %s)""", (university, faculty, specialization))
                 conn.commit()
@@ -1552,11 +1836,13 @@ def admin_addDoctor(doctor_id=None):
                     INSERT INTO doctors(first_name, last_name, second_name, phone_number, education_id, address_id, 
                     user_id, gender, department_id, birthday)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, (first_name, last_name, second_name, phone, education_id, address_id, user_id, gender, department, dob))
+                """, (
+                first_name, last_name, second_name, phone, education_id, address_id, user_id, gender, department, dob))
             conn.commit()
             cursor.close()
 
         return redirect('/admin/doctorsList')
+
 
 if __name__ == '__main__':
     app.run(debug=True)
