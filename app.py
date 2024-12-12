@@ -5,6 +5,12 @@ import pdfkit
 import jwt
 import psycopg2
 from flask import Flask, request, render_template, redirect, jsonify, session, flash, make_response, send_file
+from flask_mail import Mail, Message
+from apscheduler.schedulers.background import BackgroundScheduler
+import atexit
+
+from numpy.ma.core import minimum
+
 app = Flask(__name__)
 app.secret_key = '8sJqMOWkUCy2tW6Xiubx'
 salt = 'VsikgpaJavBH_v8OvEl'
@@ -13,6 +19,13 @@ exp_time = 15
 JWT_SECRET = app.secret_key
 JWT_ALGORITHM = 'HS256'
 JWT_EXP_DELTA_SECONDS = 360
+
+app.config['MAIL_SERVER'] = 'smtp.mail.ru'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_USERNAME'] = 'diana.konontseva@mail.ru'
+app.config['MAIL_PASSWORD'] = 'uSCX64mxkZ4pEv6ZkQgh'
+app.config['MAIL_DEFAULT_SENDER'] = 'diana.konontseva@mail.ru'
 
 conn = psycopg2.connect(database="medical_center", user="postgres", password="postgres", host="localhost", port="5433")
 
@@ -34,29 +47,6 @@ def password_forbidden_chars(string):
         if char in string:
             return True
     return False
-
-
-def token_required(func):
-    @wraps(func)
-    def decorated(*args, **kwargs):
-        token = request.cookies.get('token')  # Извлекаем токен из куки
-
-        if not token:
-            return render_template('auth.html',
-                                   error_message="You need to log in to get access.")  # Перенаправляем на страницу логина при отсутствии токена
-
-        try:
-            # Проверяем и декодируем токен
-            jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        except jwt.ExpiredSignatureError:
-            return render_template('auth.html', error_message="Your session is ended. Please, update..")
-        except jwt.InvalidTokenError:
-            return render_template('auth.html', error_message="Error. Please log in to get access.")
-        return func(*args, **kwargs)
-
-    decorated.__name__ = func.__name__
-    return decorated
-
 
 def login_required(func):
     @wraps(func)
@@ -84,6 +74,47 @@ def role_required(required_roles):
 
     return decorator
 
+
+mail = Mail(app)
+
+def send_appointment_reminders():
+    with app.app_context():
+        cursor = conn.cursor()
+        # tomorrow = datetime.now().date() + timedelta(days=1)
+        tomorrow = datetime.now().date()
+        cursor.execute("""
+            SELECT patients.email, doctors.first_name, doctors.last_name, talons.date, talons.time, status 
+            FROM talons
+            JOIN patients ON talons.patient_id = patients._id
+            JOIN doctors ON talons.doctor_id = doctors._id
+            WHERE talons.date = %s AND talons.status = 'approved'
+        """, (tomorrow,))
+        appointments = cursor.fetchall()
+        cursor.close()
+
+        for appointment in appointments:
+            patient_email = appointment[0]
+            subject = "Reminder: Upcoming Appointment"
+            body = f"""
+            Dear Patient,
+
+            This is a reminder about your appointment scheduled for {appointment[3]} at {appointment[4]} with Dr. {appointment[2]} {appointment[1]}.
+
+            Best regards,
+            Your Medical Center
+            """
+            send_email(subject, patient_email, body)
+
+def send_email(subject, recipient, body):
+    with app.app_context():
+        msg = Message(subject, recipients=[recipient], body=body)
+        mail.send(msg)
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(send_appointment_reminders, 'cron', hour=7, minute=21)
+scheduler.start()
+
+atexit.register(lambda: scheduler.shutdown())
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
