@@ -1,11 +1,10 @@
 import hashlib
 from datetime import datetime, timedelta, date
 from functools import wraps
-
+import pdfkit
 import jwt
 import psycopg2
-from flask import Flask, request, render_template, redirect, jsonify, session, flash
-
+from flask import Flask, request, render_template, redirect, jsonify, session, flash, make_response, send_file
 app = Flask(__name__)
 app.secret_key = '8sJqMOWkUCy2tW6Xiubx'
 salt = 'VsikgpaJavBH_v8OvEl'
@@ -238,7 +237,6 @@ def patient_dashboard():
         JOIN departments ON doctors.department_id = departments._id
         WHERE patient_id = %s AND date >= CURRENT_DATE
         ORDER BY date, time
-        LIMIT 5
     """, (patient_id,))
     recent_appointments = cursor.fetchall()
 
@@ -366,11 +364,11 @@ def patient_change_password():
 @login_required
 @role_required(['patient'])
 def myMedicalCard():
+    cursor = conn.cursor()
     if request.method == 'POST':
         search_query = request.form.get('search_query', '').strip()
         search_query = f"%{search_query}%"
         user_id = session.get('user_id')
-        cursor = conn.cursor()
         cursor.execute("""
                 SELECT doctors.first_name, doctors.second_name, medical_card.date, medical_card._id
                 FROM medical_card
@@ -384,7 +382,6 @@ def myMedicalCard():
         return render_template('patients/medicalCard.html', medicalCard=search)
 
     if (request.method == 'GET'):
-        cursor = conn.cursor()
         cursor.execute("""SELECT doctors.first_name, doctors.second_name, medical_card.date, medical_card._id FROM medical_card 
                                 join patients on medical_card.patient_id=patients._id 
                                 join doctors on medical_card.doctor_id = doctors._id
@@ -408,10 +405,32 @@ def medical_record(record_id):
         JOIN doctors d ON mc.doctor_id = d._id
         WHERE mc._id = %s""", str(record_id))
     record = cursor.fetchone()
-    conn.close()
+    cursor.close()
 
     return render_template('patients/medicaCardNote.html', record=record)
 
+@app.route('/generate_pdf/<int:record_id>', methods=['GET'])
+@login_required
+def generate_pdf(record_id):
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT mc.*, 
+               p.first_name || ' ' || p.last_name AS patient_name, p.b_day,
+               d.first_name || ' ' || d.last_name AS doctor_name
+        FROM medical_card mc
+        JOIN patients p ON mc.patient_id = p._id
+        JOIN doctors d ON mc.doctor_id = d._id
+        WHERE mc._id = %s""", str(record_id))
+    record = cursor.fetchone()
+    cursor.close()
+
+    html = render_template('patients/medicaCardNote.html', record=record)
+    path_wkhtmltopdf = r"C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe"
+    config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
+    pdf = pdfkit.from_string(html, False, configuration=config)
+
+    pdfkit.from_string(html, 'medical_record.pdf', configuration=config)
+    return send_file('medical_record.pdf', as_attachment=True)
 
 @app.route('/searchMedNote', methods=['GET', 'POST'])
 @login_required
@@ -439,6 +458,9 @@ def searchMedNote():
 def find_appointment():
     cursor = conn.cursor()
 
+    cursor.execute("SELECT _id FROM patients WHERE user_id = %s", (session['user_id'],))
+    patient_id = cursor.fetchone()[0]
+
     cursor.execute("SELECT _id, department FROM departments ORDER BY department ASC")
     departments = cursor.fetchall()
 
@@ -449,13 +471,37 @@ def find_appointment():
     day_of_week = datetime.strptime(requested_date, '%Y-%m-%d').isoweekday()
 
     query = """
-        SELECT doctors._id, doctors.first_name, doctors.last_name, doctors.phone_number, departments.department
+        SELECT 
+            doctors._id, 
+            doctors.first_name, 
+            doctors.last_name, 
+            doctors.phone_number, 
+            departments.department,
+            COALESCE(department_visits.visit_count, 0) AS department_visits,
+            COALESCE(doctor_visits.visit_count, 0) AS doctor_visits
         FROM doctors
         JOIN departments ON doctors.department_id = departments._id
         JOIN schedules ON doctors._id = schedules.doctor_id
+        LEFT JOIN (
+            SELECT 
+                doctors.department_id, 
+                COUNT(*) AS visit_count
+            FROM talons
+            JOIN doctors ON talons.doctor_id = doctors._id
+            WHERE talons.patient_id = %s
+            GROUP BY doctors.department_id
+        ) AS department_visits ON department_visits.department_id = departments._id
+        LEFT JOIN (
+            SELECT 
+                talons.doctor_id, 
+                COUNT(*) AS visit_count
+            FROM talons
+            WHERE talons.patient_id = %s
+            GROUP BY talons.doctor_id
+        ) AS doctor_visits ON doctor_visits.doctor_id = doctors._id
         WHERE schedules.day_of_week = %s
     """
-    params = [day_of_week]
+    params = [patient_id, patient_id, day_of_week]
 
     if department:
         query += " AND departments.department ILIKE %s"
@@ -468,6 +514,10 @@ def find_appointment():
             OR doctors.second_name ILIKE %s)
         """
         params.extend([f"%{doctor_search}%"] * 3)
+
+    query += """
+        ORDER BY department_visits DESC, doctor_visits DESC, doctors.last_name ASC
+    """
 
     cursor.execute(query, params)
     doctors = cursor.fetchall()

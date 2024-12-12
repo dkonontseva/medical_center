@@ -67,26 +67,38 @@
             font-size: 14px;
         }
 
+                .nav-menu {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
         .nav-menu .nav-item {
             padding: 12px 20px;
             margin: 8px 0;
             border-radius: 10px;
-            color: var(--text-primary);
+            color: #272b41;
             display: flex;
             align-items: center;
-            box-shadow: 4px 4px 8px var(--shadow-light), -4px -4px 8px var(--white);
+            box-shadow: 4px 4px 8px #e6e6e6, -4px -4px 8px #ffffff;
             text-decoration: none;
-            transition: all 0.3s ease;
         }
 
         .nav-item.active {
-            background: var(--primary-color);
-            color: var(--white);
+            background: #4a90e2;
+            color: white;
         }
 
         .nav-item:hover {
-            background: rgba(74, 144, 226, 0.1);
-            transform: translateX(5px);
+            background: rgba(74, 144, 226, 0.36);
+            color: white;
+        }
+
+        .logout {
+            padding: 12px 20px;
+            color: #272b41;
+            margin-top: 190%;
+            text-decoration: none;
         }
 
         .main-content {
@@ -279,6 +291,7 @@
         <a href="/myMedicalCard" class="nav-item">My medical card</a>
         <a href="/findAppointment" class="nav-item active">Find appointment</a>
         <a href="/patientProfile" class="nav-item">Profile Settings</a>
+        <a href="/" class="logout">Logout</a>
     </div>
 </div>
 

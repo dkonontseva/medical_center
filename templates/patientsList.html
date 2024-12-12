@@ -42,6 +42,8 @@
 
         /* Sidebar Styles */
         .sidebar {
+            display: flex;
+            flex-direction: column;
             width: var(--sidebar-width);
             background: #ffffff;
             padding: 20px;
@@ -69,12 +71,6 @@
             font-size: 22px;
             font-weight: bold;
             color: var(--primary-color);
-        }
-
-        .menu-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
         }
 
         .menu-item {
@@ -114,6 +110,13 @@
 
         .menu-item.active i {
             color: white;
+        }
+
+        .logout {
+            padding: 12px 20px;
+            color: #272b41;
+            margin-top: auto;
+            text-decoration: none;
         }
 
         /* Main Content */
@@ -417,6 +420,7 @@
             <i class="fas fa-hospital"></i>
             <a href="/admin/doctorLeaves">Doctor Leaves</a>
         </div>
+        <a href='/' class="logout">Logout</a>
     </div>
     <!-- Main Content -->
     <div class="main-content">
@@ -460,26 +464,31 @@
                 </tr>
                 <tbody>
                 <tr>
-
-                    {% for patient in patients %}
+                    {% if patients %}
+                        {% for patient in patients %}
+                            <tr>
+                                <td><input type="checkbox" name="selectedRows" value="{{ patient[10] }}"></td>
+                                <td>{{ patient[0] }} {{ patient[1] }} {{ patient[2] }}</td>
+                                <td>{{ patient[3] }}</td>
+                                <td>{{ patient[11] }}</td>
+                                <td>{{ patient[4] }}</td>
+                                <td>{{ patient[5] }}, {{ patient[6] }}, {{ patient[7] }} {{ patient[8] }} {{ patient[9] }}</td>
+                                <td>
+                                    <button class="download-btn"
+                                            style="background-color: transparent; border-color: transparent"
+                                            onclick="redirectToPage('{{ patient[10] }}')">
+                                        <img width="40" height="40"
+                                             src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
+                                             alt="pencil--v2"/>
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
                         <tr>
-                            <td><input type="checkbox" name="selectedRows" value="{{ patient[10] }}"></td>
-                            <td>{{ patient[0] }} {{ patient[1] }} {{ patient[2] }}</td>
-                            <td>{{ patient[3] }}</td>
-                            <td>{{ patient[11] }}</td>
-                            <td>{{ patient[4] }}</td>
-                            <td>{{ patient[5] }}, {{ patient[6] }}, {{ patient[7] }} {{ patient[8] }} {{ patient[9] }}</td>
-                            <td>
-                                <button class="download-btn"
-                                        style="background-color: transparent; border-color: transparent"
-                                        onclick="redirectToPage('{{ patient[10] }}')">
-                                    <img width="40" height="40"
-                                         src="https://img.icons8.com/pastel-glyph/40/4D4D4D/pencil--v2.png"
-                                         alt="pencil--v2"/>
-                                </button>
-                            </td>
+                            <td colspan="9" style="text-align: center;">No patients found.</td>
                         </tr>
-                    {% endfor %}
+                    {% endif %}
                 </tbody>
             </table>
 
@@ -518,7 +527,7 @@
         window.location.href = `/admin/addPatient/${patientId}`;
     }
 
-        function deleteSelected() {
+    function deleteSelected() {
         const selectedRows = document.getElementsByName('selectedRows');
         const selectedValues = [];
         for (let i = 0; i < selectedRows.length; i++) {

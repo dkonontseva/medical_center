@@ -55,6 +55,12 @@
             font-size: 14px;
         }
 
+                .nav-menu {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
         .nav-menu .nav-item {
             padding: 12px 20px;
             margin: 8px 0;
@@ -74,6 +80,13 @@
         .nav-item:hover {
             background: rgba(74, 144, 226, 0.36);
             color: white;
+        }
+
+        .logout {
+            padding: 12px 20px;
+            color: #272b41;
+            margin-top: 190%;
+            text-decoration: none;
         }
 
         /* Main Content */
@@ -173,6 +186,7 @@
         <a href='/myMedicalCard' class="nav-item active">My medical card</a>
         <a href="/findAppointment" class="nav-item">Find appointment</a>
         <a href='/patientProfile' class="nav-item">Profile Settings</a>
+        <a href='/' class="logout">Logout</a>
     </div>
 </div>
 

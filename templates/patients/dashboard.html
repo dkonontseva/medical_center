@@ -68,6 +68,12 @@
             font-size: 14px;
         }
 
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
         .nav-menu .nav-item {
             padding: 12px 20px;
             margin: 8px 0;
@@ -87,6 +93,13 @@
         .nav-item:hover {
             background: rgba(74, 144, 226, 0.36);
             color: white;
+        }
+
+        .logout {
+            padding: 12px 20px;
+            color: #272b41;
+            margin-top: 190%;
+            text-decoration: none;
         }
 
 
@@ -345,7 +358,7 @@
         <a href='/myMedicalCard' class="nav-item">My medical card</a>
         <a href="/findAppointment" class="nav-item">Find appointment</a>
         <a href='/patientProfile' class="nav-item">Profile Settings</a>
-        <a href='/' class="nav-item logout" style="background: #ffffff; color: #636363;">Logout</a>
+        <a href='/' class="logout">Logout</a>
     </div>
 </div>
 <div class="dashboard-container">
@@ -357,7 +370,7 @@
 
     <div class="tabs">
         <div class="tab active" onclick="switchTab('statistics')">Statistics</div>
-        <div class="tab" onclick="switchTab('appointments')">Recent Appointments</div>
+        <div class="tab" onclick="switchTab('appointments')">Future Appointments</div>
         <div class="tab" onclick="switchTab('history')">Appointments History</div>
     </div>
 

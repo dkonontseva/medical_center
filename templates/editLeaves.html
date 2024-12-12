@@ -36,7 +36,7 @@
             display: flex;
         }
 
-        /* Sidebar */
+                /* Sidebar */
         .container {
             display: flex;
             min-height: 100vh;
@@ -44,6 +44,8 @@
 
         /* Sidebar Styles */
         .sidebar {
+            display: flex;
+            flex-direction: column;
             width: var(--sidebar-width);
             background: #ffffff;
             padding: 20px;
@@ -71,12 +73,6 @@
             font-size: 22px;
             font-weight: bold;
             color: var(--primary-color);
-        }
-
-        .menu-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
         }
 
         .menu-item {
@@ -116,6 +112,13 @@
 
         .menu-item.active i {
             color: white;
+        }
+
+        .logout {
+            padding: 12px 20px;
+            color: #272b41;
+            margin-top: auto;
+            text-decoration: none;
         }
 
         /* Main Content */
@@ -341,40 +344,6 @@
             background-color: #cccccc;
         }
 
-        /* Календарь */
-        .flatpickr-calendar {
-            background-color: #565fa5; /* Темный фон */
-            color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-        }
-
-        .flatpickr-day,
-        .flatpickr-weekday {
-            color: white;
-        }
-
-        .flatpickr-day:hover {
-            background-color: rgba(108, 135, 255, 0.3);
-            color: white;
-        }
-
-        .flatpickr-day.today {
-            background-color: #6c87ff;
-            color: white;
-        }
-
-        .flatpickr-month {
-            background-color: #262626;
-        }
-
-        .flatpickr-prev-month, .flatpickr-next-month {
-            color: #6c87ff;
-        }
-
-        .flatpickr-current-month {
-            color: #6c87ff;
-        }
 
         /* Responsive Design */
         @media (max-width: 1200px) {
@@ -430,6 +399,7 @@
             <i class="fas fa-hospital"></i>
             <a href="/admin/doctorLeaves">Doctor Leaves</a>
         </div>
+         <a href='/' class="logout">Logout</a>
     </div>
     <!-- Main Content -->
     <div class="main-content">
