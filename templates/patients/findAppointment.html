@@ -351,29 +351,24 @@
     </div>
 </div>
 <script>
-    // Добавляем обработчик для кнопки поиска
     document.getElementById('searchButton').addEventListener('click', function () {
         const date = document.getElementById('date').value;
         const doctorSearch = document.getElementById('doctorSearch').value;
         const department = document.getElementById('departmentFilter').value;
-
-        // Формируем запрос к серверу
         fetch(`/findAppointment?date=${date}&doctor_search=${doctorSearch}&department=${department}`)
             .then(response => response.text())
             .then(html => {
-                // Извлекаем обновленный список врачей из ответа
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 const updatedDoctorsGrid = doc.getElementById('doctors-grid');
 
-                // Обновляем текущую секцию врачей
                 document.getElementById('doctors-grid').innerHTML = updatedDoctorsGrid.innerHTML;
             })
             .catch(error => console.error('Error updating doctors:', error));
     });
 
     function loadAvailableSlots(doctorId, doctorName) {
-        selectedDoctorId = doctorId; // Устанавливаем выбранного врача
+        selectedDoctorId = doctorId;
         const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
         document.getElementById('selected-doctor-name').innerText = doctorName;
         document.getElementById('doctors-section').style.display = 'none';
@@ -403,13 +398,11 @@
     function selectSlot(time) {
         selectedTime = time;
 
-        // Убираем выделение с ранее выбранной ячейки
         const previouslySelected = document.querySelector('.ticket-card.selected-slot');
         if (previouslySelected) {
             previouslySelected.classList.remove('selected-slot');
         }
 
-        // Находим и выделяем текущую ячейку
         const slotsGrid = document.getElementById('available-times');
         const slotCards = slotsGrid.getElementsByClassName('ticket-card');
         for (const slotCard of slotCards) {
@@ -418,7 +411,6 @@
             }
         }
 
-        // Обновляем текст кнопки для подтверждения
         const bookButton = document.getElementById('book-button');
         bookButton.style.display = 'block';
         bookButton.textContent = `Book Appointment for ${time}`;

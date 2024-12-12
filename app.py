@@ -581,17 +581,18 @@ def get_available_slots():
     shifts = cursor.fetchall()
 
     cursor.execute("""
-        SELECT time FROM talons
-        WHERE doctor_id = %s AND date = %s
-    """, (doctor_id, date))
-    booked_slots = {row[0] for row in cursor.fetchall()}
-
+           SELECT time FROM talons
+           WHERE doctor_id = %s AND date = %s
+       """, (doctor_id, date))
+    booked_slots = {row[0].strftime('%H:%M') for row in cursor.fetchall()}
+    print("Booked slots:", booked_slots)
     cursor.close()
 
+    # Генерируем доступные слоты
     available_slots = []
     for start_time, end_time in shifts:
-        current_time = datetime.combine(datetime.today(), start_time)
-        end_time_dt = datetime.combine(datetime.today(), end_time)
+        current_time = datetime.combine(datetime.strptime(date, '%Y-%m-%d'), start_time)
+        end_time_dt = datetime.combine(datetime.strptime(date, '%Y-%m-%d'), end_time)
 
         while current_time < end_time_dt:
             slot_time = current_time.strftime('%H:%M')
