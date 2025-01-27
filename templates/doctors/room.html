@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Комната видеозвонка</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f3f6f9;
+            color: #2e2e3a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            justify-content: center;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #4a90e2;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .video-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            align-items: center;
+            align-content: center;
+            flex-grow: 1;
+        }
+
+        video {
+            border-radius: 8px;
+            margin: 10px;
+        }
+
+        #localVideo {
+            width: 600px;
+            height: 400px;
+            object-fit: cover;
+            border: 2px solid #ddd;
+        }
+
+        #remoteVideos video {
+            width: 300px;
+            height: 200px;
+        }
+
+        .button-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button {
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            margin: 10px;
+            padding: 15px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #357abd;
+        }
+
+        button:disabled {
+            background-color: #ddd;
+            cursor: not-allowed;
+        }
+
+        .mic-on {
+            background-color: #4a90e2;
+        }
+
+        .mic-off {
+            background-color: #ccc; /* Серый цвет, если микрофон выключен */
+        }
+
+        .camera-on {
+            background-color: #4a90e2;
+        }
+
+        .camera-off {
+            background-color: #ccc; /* Серый цвет, если камера выключена */
+        }
+
+        .icon {
+            width: 30px;
+            height: 30px;
+        }
+
+        .end-btn {
+            background-color: #fd6666;
+        }
+
+        .end-btn:hover {
+            background-color: #e04f50;
+        }
+    </style>
+</head>
+<body>
+<h1>Комната: {{ room_id }}</h1>
+
+<div class="video-container">
+    <video id="localVideo" autoplay muted></video>
+    <div id="remoteVideos"></div>
+</div>
+
+<div class="button-container">
+    <button id="micButton" class="mic-on" onclick="toggleMic()">
+        <img src="https://img.icons8.com/ios-filled/50/ffffff/microphone.png" class="icon" alt="mic">
+    </button>
+    <button id="cameraButton" class="camera-on" onclick="toggleCamera()">
+        <img src="https://img.icons8.com/?size=50&id=3Zs7SYWCWmgg&format=png&color=ffffff" class="icon" alt="camera">
+    </button>
+    <button onclick="leaveRoom()" class="end-btn">
+        <img src="https://img.icons8.com/ios-filled/50/ffffff/cancel.png" class="icon" alt="end call">
+    </button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+<script>
+    const socket = io.connect('http://' + document.domain + ':' + location.port);
+    const roomId = '{{ room_id }}';
+    let localStream;
+    let peerConnections = {};
+    let isCameraOn = true;
+    let isMicOn = true;
+
+    async function startLocalStream() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+            localStream = stream;
+            document.getElementById('localVideo').srcObject = stream;
+
+            socket.emit('join', {room_id: roomId});
+        } catch (error) {
+            console.error('Ошибка при доступе к медиа-устройствам:', error);
+        }
+    }
+
+    function createPeerConnection(userId) {
+        if (peerConnections[userId]) {
+            return peerConnections[userId];
+        }
+
+        const peerConnection = new RTCPeerConnection();
+
+        peerConnections[userId] = peerConnection;
+
+        localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localStream);
+        });
+
+        peerConnection.addEventListener('track', event => {
+            if (!document.querySelector(`#remoteVideo-${userId}`)) {
+                const remoteVideo = document.createElement('video');
+                remoteVideo.id = `remoteVideo-${userId}`;
+                remoteVideo.srcObject = event.streams[0];
+                remoteVideo.autoplay = true;
+                remoteVideo.playsInline = true;
+                document.getElementById('remoteVideos').appendChild(remoteVideo);
+            }
+        });
+
+        peerConnection.addEventListener('icecandidate', event => {
+            if (event.candidate) {
+                socket.emit('signal', {
+                    to: userId,
+                    from: socket.id,
+                    signal: { type: 'iceCandidate', candidate: event.candidate }
+                });
+            }
+        });
+
+        return peerConnection;
+    }
+
+    socket.on('user_connected', data => {
+        const userId = data.user_id;
+
+        if (!peerConnections[userId]) {
+            const peerConnection = createPeerConnection(userId);
+
+            peerConnection.createOffer()
+                .then(offer => peerConnection.setLocalDescription(offer))
+                .then(() => {
+                    console.log('Отправка offer пользователю', userId);
+                    socket.emit('signal', {
+                        to: userId,
+                        from: socket.id,
+                        signal: peerConnection.localDescription
+                    });
+                })
+                .catch(err => console.error('Ошибка при создании offer:', err));
+        }
+    });
+
+    socket.on('signal', data => {
+        const { to, from, signal } = data;
+
+        if (to === socket.id) {
+            if (!peerConnections[from]) {
+                createPeerConnection(from);
+            }
+
+            const peerConnection = peerConnections[from];
+
+            if (signal.type === 'offer') {
+                peerConnection.setRemoteDescription(new RTCSessionDescription(signal))
+                    .then(() => peerConnection.createAnswer())
+                    .then(answer => peerConnection.setLocalDescription(answer))
+                    .then(() => {
+                        console.log('Отправка answer пользователю', from);
+                        socket.emit('signal', { to: from, from: socket.id, signal: peerConnection.localDescription });
+                    })
+                    .catch(err => console.error('Ошибка при обработке offer:', err));
+            } else if (signal.type === 'answer') {
+                peerConnection.setRemoteDescription(new RTCSessionDescription(signal))
+                    .catch(err => console.error('Ошибка при обработке answer:', err));
+            } else if (signal.type === 'iceCandidate') {
+                peerConnection.addIceCandidate(new RTCIceCandidate(signal.candidate))
+                    .catch(err => console.error('Ошибка при добавлении ICE-кандидата:', err));
+            }
+        }
+    });
+
+    function leaveRoom() {
+        socket.emit('leave', {room_id: roomId});
+        Object.values(peerConnections).forEach(pc => pc.close());
+        peerConnections = {};
+        window.location.href = '/doctor/video';
+    }
+
+    function toggleCamera() {
+        isCameraOn = !isCameraOn;
+        localStream.getVideoTracks()[0].enabled = isCameraOn;
+
+        const cameraButton = document.getElementById('cameraButton');
+        if (isCameraOn) {
+            cameraButton.classList.remove('camera-off');
+            cameraButton.classList.add('camera-on');
+        } else {
+            cameraButton.classList.remove('camera-on');
+            cameraButton.classList.add('camera-off');
+        }
+    }
+
+    function toggleMic() {
+        isMicOn = !isMicOn;
+        localStream.getAudioTracks()[0].enabled = isMicOn;
+
+        const micButton = document.getElementById('micButton');
+        if (isMicOn) {
+            micButton.classList.remove('mic-off');
+            micButton.classList.add('mic-on');
+        } else {
+            micButton.classList.remove('mic-on');
+            micButton.classList.add('mic-off');
+        }
+    }
+
+    startLocalStream();
+</script>
+</body>
+</html>

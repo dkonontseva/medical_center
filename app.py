@@ -1,6 +1,9 @@
 import hashlib
+import random
+import string
 from datetime import datetime, timedelta, date
 from functools import wraps
+from flask_socketio import SocketIO, join_room, leave_room, send, emit
 import pdfkit
 import jwt
 import psycopg2
@@ -8,9 +11,11 @@ from flask import Flask, request, render_template, redirect, jsonify, session, f
 from flask_mail import Mail, Message
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
+from aiortc import RTCPeerConnection, MediaStreamTrack
 
 from numpy.ma.core import minimum
 
+# TODO: ИИ-ассистент для пациента; видеокоференции среди врачей; онлайн-оплата
 app = Flask(__name__)
 app.secret_key = '8sJqMOWkUCy2tW6Xiubx'
 salt = 'VsikgpaJavBH_v8OvEl'
@@ -27,6 +32,7 @@ app.config['MAIL_USERNAME'] = 'diana.konontseva@mail.ru'
 app.config['MAIL_PASSWORD'] = 'uSCX64mxkZ4pEv6ZkQgh'
 app.config['MAIL_DEFAULT_SENDER'] = 'diana.konontseva@mail.ru'
 
+socketio = SocketIO(app)
 conn = psycopg2.connect(database="medical_center", user="postgres", password="postgres", host="localhost", port="5433")
 
 # diana.konontseva@mail.ru diana123
@@ -118,6 +124,7 @@ atexit.register(lambda: scheduler.shutdown())
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    session['user_id'] = ""
     return redirect('/login')
 
 @app.route('/error', methods=['GET', 'POST'])
@@ -588,7 +595,6 @@ def get_available_slots():
     print("Booked slots:", booked_slots)
     cursor.close()
 
-    # Генерируем доступные слоты
     available_slots = []
     for start_time, end_time in shifts:
         current_time = datetime.combine(datetime.strptime(date, '%Y-%m-%d'), start_time)
@@ -1948,6 +1954,139 @@ def admin_addDoctor(doctor_id=None):
 
         return redirect('/admin/doctorsList')
 
+@socketio.on('connect')
+def handle_connect():
+    print(f"User {session.get('user_id')} connected")
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print(f"User {session.get('user_id')} disconnected")
+
+@socketio.on('join')
+def handle_join(data):
+    user_id = session.get('user_id')
+    room = data['room']
+    join_room(room)
+    print(room)
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT 
+        chat_messages.message, chat_messages.timestamp, 
+        doctors.first_name || ' ' || doctors.last_name AS sender_name,
+        chat_messages.user_id
+    FROM chat_messages
+    JOIN doctors ON chat_messages.user_id = doctors.user_id
+    WHERE chat_messages.room = %s
+    ORDER BY chat_messages.timestamp ASC
+""", (room,))
+    messages = cursor.fetchall()
+
+    for message, timestamp, sender_name, sender_id  in messages:
+        emit('message', {
+            'msg': message,
+            'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            'sender': sender_name,
+            'isSender': sender_id == user_id
+        }, room=request.sid)
+
+
+@socketio.on('send_message')
+def handle_send_message(data):
+    room = data['room']
+    message = data['message']
+    user_id = session.get('user_id')
+    print(f"Message received from user {user_id} for room {room}: {message}")
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT first_name, last_name FROM doctors WHERE user_id = %s", (user_id,))
+    user_name = " ".join(cursor.fetchone())
+
+    cursor.execute("""
+        INSERT INTO chat_messages (room, user_id, message, timestamp)
+        VALUES (%s, %s, %s, NOW())
+    """, (room, user_id, message))
+    conn.commit()
+
+    emit('message', {
+        'msg': message,
+        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'sender': user_name,
+        'isSender': True
+    }, room=request.sid)
+
+    emit('message', {
+        'msg': message,
+        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'sender': user_name,
+        'isSender': False
+    }, room=room, include_self=False)
+
+
+@app.route('/doctor/chat')
+@login_required
+@role_required(['doctor'])
+def chat():
+    user_id = session.get('user_id')
+    cursor = conn.cursor()
+    cursor.execute("""
+               SELECT departments.department
+               FROM doctors
+               JOIN departments ON doctors.department_id = departments._id
+               WHERE doctors.user_id = %s
+           """, (user_id,))
+    department = cursor.fetchone()
+    return render_template('doctors/chat.html', department=department[0])
+
+
+rooms = {}
+@app.route('/doctor/video')
+@login_required
+@role_required(['doctor'])
+def video():
+    return render_template('doctors/video.html')
+
+
+@app.route('/doctor/create_room/<room_id>')
+@login_required
+@role_required(['doctor'])
+def create_room(room_id):
+    return render_template('doctors/room.html', room_id=room_id)
+
+
+@app.route('/doctor/join_room/<room_id>')
+@login_required
+@role_required(['doctor'])
+def join_room_view(room_id):
+    return render_template('doctors/room.html', room_id=room_id)
+
+
+@socketio.on('join')
+def on_join(data):
+    room_id = data['room_id']
+    user_id = request.sid
+    join_room(room_id)
+    print(f"Пользователь {user_id} присоединился к комнате {room_id}")
+    emit('user_connected', {'user_id': user_id}, room=room_id, include_self=False)
+
+
+@socketio.on('signal')
+def handle_signal(data):
+    if 'to' not in data:
+        print("Ошибка: ключ 'to' отсутствует в данных:", data)
+        return
+
+    to = data['to']  # ID сокета получателя
+    emit('signal', data, to=to)  # Отправляем сигнал конкретному пользователю
+
+
+@socketio.on('leave')
+def on_leave(data):
+    room_id = data['room_id']
+    user_id = request.sid
+    leave_room(room_id)
+    emit('user_disconnected', {'user_id': user_id}, room=room_id)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
+    socketio.run(app, debug=True)

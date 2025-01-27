@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Call</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #272b41;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: #ffffff;
+            padding: 20px;
+            height: 100vh;
+            position: fixed;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .doctor-profile {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .doctor-profile img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 8px 8px 16px #e6e6e6, -8px -8px 16px #ffffff;
+        }
+
+        .doctor-info h3 {
+            color: #272b41;
+            font-size: 18px;
+        }
+
+        .doctor-info p {
+            color: #757575;
+            font-size: 14px;
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .nav-menu .nav-item {
+            padding: 12px 20px;
+            margin: 8px 0;
+            border-radius: 10px;
+            color: #272b41;
+            display: flex;
+            align-items: center;
+            box-shadow: 4px 4px 8px #e6e6e6, -4px -4px 8px #ffffff;
+            text-decoration: none;
+        }
+
+        .nav-item.active {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .nav-item:hover {
+            background: rgba(74, 144, 226, 0.36);
+            color: white;
+        }
+
+        .logout {
+            padding: 12px 20px;
+            color: #272b41;
+            margin-top: 150%;
+            text-decoration: none;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 30px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-top: 50px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            text-align: center;
+        }
+
+        input {
+            padding: 10px;
+            margin: 10px;
+            border-radius: 4px;
+            width: 300px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 300px;
+            margin: 10px 0;
+        }
+
+        button:hover {
+            background-color: #357abd;
+        }
+
+        #room-actions {
+            display: none;
+        }
+
+        #chat-window {
+            max-height: 400px;
+            overflow-y: scroll;
+            padding: 10px;
+            margin-top: 20px;
+            background: #f9f9f9;
+            border: 1px solid #ccc;
+            width: 90%;
+            max-width: 800px;
+        }
+
+        .message {
+            margin-bottom: 10px;
+        }
+
+        #local-video, .remote-video {
+            width: 300px;
+            height: 200px;
+            margin: 10px;
+        }
+
+        .video-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .video-wrapper {
+            margin: 10px;
+        }
+
+        .end-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .end-btn:hover {
+            background-color: darkred;
+        }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="doctor-profile">
+        <img src="https://picsum.photos/200/200?random=1" alt="Doctor Profile">
+    </div>
+    <div class="nav-menu">
+        <a href="/doctor/dashboard" class="nav-item">Dashboard</a>
+        <a href="/doctor/myLeaves" class="nav-item">My leaves</a>
+        <a href="/doctor/patientsCards" class="nav-item">Patients' cards</a>
+        <a href="/doctor/profile" class="nav-item">Profile Settings</a>
+        <a href="/doctor/chat" class="nav-item">Chat</a>
+        <a href="/doctor/video" class="nav-item active">Video</a>
+        <a href='/' class="logout">Logout</a>
+    </div>
+</div>
+<div class="main-content">
+    <button onclick="createRoom()">Create a New Meeting</button>
+    <input type="text" id="room-id-input" placeholder="Enter Room ID to Join">
+    <button onclick="joinRoom()">Join Existing Meeting</button>
+    <div id="room-id-display" style="display:none;">
+        <p>Ваш уникальный ID комнаты: <strong id="room-id"></strong></p>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+<script>
+    const socket = io.connect('http://' + document.domain + ':' + location.port);
+
+    // Функция для генерации уникального ID комнаты
+    function generateRoomId() {
+        return Math.random().toString(36).substr(2, 6); // Генерация случайного ID
+    }
+
+    // Функция для создания новой комнаты
+    function createRoom() {
+        const roomId = generateRoomId();  // Генерация уникального ID для комнаты
+
+        // Отображаем ID комнаты на странице
+        document.getElementById('room-id').innerText = roomId;
+        document.getElementById('room-id-display').style.display = 'block';
+        document.getElementById('room-info').style.display = 'none';
+
+        // Отправляем запрос на создание комнаты на сервере
+        window.location.href = `/doctor/create_room/${roomId}`;
+    }
+
+    // Функция для присоединения к существующей комнате
+    function joinRoom() {
+        const roomId = document.getElementById('room-id-input').value;
+        if (roomId) {
+            // Перенаправляем на страницу для присоединения к комнате
+            window.location.href = `/doctor/join_room/${roomId}`;
+        } else {
+            alert('Пожалуйста, введите номер комнаты!');
+        }
+    }
+
+    // Ожидаем соединение с сервером через WebSocket
+    socket.on('connect', () => {
+        console.log('Connected to server');
+    });
+</script>
+</body>
+</html>

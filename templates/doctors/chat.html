@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Chat</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #272b41;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: #ffffff;
+            padding: 20px;
+            height: 100vh;
+            position: fixed;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .doctor-profile {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .doctor-profile img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 8px 8px 16px #e6e6e6, -8px -8px 16px #ffffff;
+        }
+
+        .doctor-info h3 {
+            color: #272b41;
+            font-size: 18px;
+        }
+
+        .doctor-info p {
+            color: #757575;
+            font-size: 14px;
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .nav-menu .nav-item {
+            padding: 12px 20px;
+            margin: 8px 0;
+            border-radius: 10px;
+            color: #272b41;
+            display: flex;
+            align-items: center;
+            box-shadow: 4px 4px 8px #e6e6e6, -4px -4px 8px #ffffff;
+            text-decoration: none;
+        }
+
+        .nav-item.active {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .nav-item:hover {
+            background: rgba(74, 144, 226, 0.36);
+            color: white;
+        }
+
+        .logout {
+            padding: 12px 20px;
+            color: #272b41;
+            margin-top: 150%;
+            text-decoration: none;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 30px;
+            flex: 1;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: #4a90e2;
+            color: white;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .chat-window {
+            height: 750px;
+            overflow-y: scroll;
+            padding: 15px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .chat-window::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-window::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 4px;
+        }
+
+        .chat-message {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .chat-message.sent {
+            justify-content: flex-end;
+        }
+
+        .chat-message .message-bubble {
+            max-width: 70%;
+            padding: 10px;
+            border-radius: 10px;
+            background: #f0f0f0;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .chat-message.sent .message-bubble {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .chat-message .sender-info {
+            font-size: 12px;
+            color: #777;
+            margin-bottom: 5px;
+        }
+
+        .chat-input-container {
+            display: flex;
+            padding: 15px;
+            background: #f4f4f4;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-right: 10px;
+        }
+
+        .chat-input:focus {
+            border-color: #4a90e2;
+            outline: none;
+        }
+
+        .send-button {
+            padding: 10px 20px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .send-button:hover {
+            background: #357abd;
+        }
+
+        .sender-info {
+            font-size: 12px;
+            color: #777;
+            margin-bottom: 5px;
+        }
+
+        .timestamp {
+            font-size: 11px;
+            color: #aaa;
+            margin-left: 5px;
+        }
+
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="doctor-profile">
+        <img src="https://picsum.photos/200/200?random=1" alt="Doctor Profile">
+    </div>
+    <div class="nav-menu">
+        <a href="/doctor/dashboard" class="nav-item">Dashboard</a>
+        <a href="/doctor/myLeaves" class="nav-item">My leaves</a>
+        <a href="/doctor/patientsCards" class="nav-item">Patients' cards</a>
+        <a href="/doctor/profile" class="nav-item">Profile Settings</a>
+        <a href="/doctor/chat" class="nav-item active">Chat</a>
+        <a href='/' class="logout">Logout</a>
+    </div>
+</div>
+<div class="main-content">
+    <div class="chat-container">
+        <div class="chat-header">Doctor Chat</div>
+        <div id="chat-window" class="chat-window"></div>
+        <div class="chat-input-container">
+            <input type="text" id="message-input" class="chat-input" placeholder="Type your message here...">
+            <button id="send-button" class="send-button">Send</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const department = "{{ department }}";
+    const socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+
+    socket.emit('join', {room: department});
+
+    socket.on('message', (data) => {
+        console.log("Received message:", data);
+        const chatWindow = document.getElementById('chat-window');
+        const msgElement = document.createElement('div');
+        msgElement.classList.add('chat-message');
+
+        if (data.isSender) {
+            msgElement.classList.add('sent');
+        } else {
+            msgElement.classList.add('received');
+        }
+
+        const messageHeader = document.createElement('div');
+        messageHeader.classList.add('sender-info');
+        messageHeader.innerHTML = `<strong>${data.sender}</strong> <span class="timestamp">${data.timestamp}</span>`;
+
+        const messageBubble = document.createElement('div');
+        messageBubble.classList.add('message-bubble');
+        messageBubble.textContent = data.msg;
+
+        msgElement.appendChild(messageHeader);
+        msgElement.appendChild(messageBubble);
+        chatWindow.appendChild(msgElement);
+
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    });
+
+
+    document.getElementById('send-button').addEventListener('click', () => {
+        const messageInput = document.getElementById('message-input');
+        const message = messageInput.value;
+
+        if (message.trim() !== '') {
+            socket.emit('send_message', {room: department, message: message});
+            messageInput.value = '';
+        }
+    });
+
+    document.getElementById('message-input').addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            document.getElementById('send-button').click();
+        }
+    });
+</script>
+</body>
+</html>
