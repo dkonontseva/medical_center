@@ -15,7 +15,7 @@ from aiortc import RTCPeerConnection, MediaStreamTrack
 
 from numpy.ma.core import minimum
 
-# TODO: ИИ-ассистент для пациента; видеокоференции среди врачей; онлайн-оплата
+# TODO: ИИ-ассистент для пациента
 app = Flask(__name__)
 app.secret_key = '8sJqMOWkUCy2tW6Xiubx'
 salt = 'VsikgpaJavBH_v8OvEl'
@@ -2075,8 +2075,8 @@ def handle_signal(data):
         print("Ошибка: ключ 'to' отсутствует в данных:", data)
         return
 
-    to = data['to']  # ID сокета получателя
-    emit('signal', data, to=to)  # Отправляем сигнал конкретному пользователю
+    to = data['to']
+    emit('signal', data, to=to)
 
 
 @socketio.on('leave')

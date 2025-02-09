@@ -96,7 +96,7 @@
         }
 
         .mic-off {
-            background-color: #ccc; /* Серый цвет, если микрофон выключен */
+            background-color: #ccc;
         }
 
         .camera-on {
@@ -104,7 +104,19 @@
         }
 
         .camera-off {
-            background-color: #ccc; /* Серый цвет, если камера выключена */
+            background-color: #ccc;
+        }
+
+        .share-screen-btn {
+            background-color: #4caf50;
+        }
+
+        .share-screen-btn:hover {
+            background-color: #45a049;
+        }
+
+        .share-screen-active {
+            background-color: #fdc100;
         }
 
         .icon {
@@ -119,6 +131,7 @@
         .end-btn:hover {
             background-color: #e04f50;
         }
+        
     </style>
 </head>
 <body>
@@ -136,6 +149,10 @@
     <button id="cameraButton" class="camera-on" onclick="toggleCamera()">
         <img src="https://img.icons8.com/?size=50&id=3Zs7SYWCWmgg&format=png&color=ffffff" class="icon" alt="camera">
     </button>
+    <button id="shareScreenButton" class="share-screen-btn" onclick="toggleScreenSharing()">
+        <img src="https://img.icons8.com/?size=100&id=l93cf6NBKegc&format=png&color=ffffff" class="icon"
+             alt="screen share">
+    </button>
     <button onclick="leaveRoom()" class="end-btn">
         <img src="https://img.icons8.com/ios-filled/50/ffffff/cancel.png" class="icon" alt="end call">
     </button>
@@ -149,6 +166,8 @@
     let peerConnections = {};
     let isCameraOn = true;
     let isMicOn = true;
+    let isScreenSharing = false;
+    let screenStream;
 
     async function startLocalStream() {
         try {
@@ -159,6 +178,55 @@
             socket.emit('join', {room_id: roomId});
         } catch (error) {
             console.error('Ошибка при доступе к медиа-устройствам:', error);
+        }
+    }
+
+   async function startScreenShare() {
+        try {
+            screenStream = await navigator.mediaDevices.getDisplayMedia({video: true});
+            document.getElementById('localVideo').srcObject = screenStream;
+            isScreenSharing = true;
+            // Отправляем поток экрана другим пользователям
+            Object.keys(peerConnections).forEach(userId => {
+                const peerConnection = peerConnections[userId];
+                peerConnection.getSenders().forEach(sender => {
+                    if (sender.track.kind === 'video') {
+                        sender.replaceTrack(screenStream.getVideoTracks()[0]);
+                    }
+                });
+            });
+
+            // Изменение состояния кнопки демонстрации экрана
+            document.getElementById('shareScreenButton').classList.add('share-screen-active');
+        } catch (error) {
+            console.error('Ошибка при захвате экрана:', error);
+        }
+    }
+
+    function stopScreenShare() {
+        screenStream.getTracks().forEach(track => track.stop());
+        document.getElementById('localVideo').srcObject = localStream;
+        isScreenSharing = false;
+
+        // Возвращаем камеру в поток
+        Object.keys(peerConnections).forEach(userId => {
+            const peerConnection = peerConnections[userId];
+            peerConnection.getSenders().forEach(sender => {
+                if (sender.track.kind === 'video') {
+                    sender.replaceTrack(localStream.getVideoTracks()[0]);
+                }
+            });
+        });
+
+        // Изменяем состояние кнопки демонстрации экрана
+        document.getElementById('shareScreenButton').classList.remove('share-screen-active');
+    }
+
+    function toggleScreenSharing() {
+        if (isScreenSharing) {
+            stopScreenShare();
+        } else {
+            startScreenShare();
         }
     }
 
@@ -191,7 +259,7 @@
                 socket.emit('signal', {
                     to: userId,
                     from: socket.id,
-                    signal: { type: 'iceCandidate', candidate: event.candidate }
+                    signal: {type: 'iceCandidate', candidate: event.candidate}
                 });
             }
         });
@@ -220,7 +288,7 @@
     });
 
     socket.on('signal', data => {
-        const { to, from, signal } = data;
+        const {to, from, signal} = data;
 
         if (to === socket.id) {
             if (!peerConnections[from]) {
@@ -235,7 +303,7 @@
                     .then(answer => peerConnection.setLocalDescription(answer))
                     .then(() => {
                         console.log('Отправка answer пользователю', from);
-                        socket.emit('signal', { to: from, from: socket.id, signal: peerConnection.localDescription });
+                        socket.emit('signal', {to: from, from: socket.id, signal: peerConnection.localDescription});
                     })
                     .catch(err => console.error('Ошибка при обработке offer:', err));
             } else if (signal.type === 'answer') {
